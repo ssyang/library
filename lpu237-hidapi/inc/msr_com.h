@@ -51,7 +51,7 @@ typedef enum {
 }type_msr_rsp;
 
 #define MSR_WARN_ICC_INSERTED	0xBA
-#define MSR_WARN_ICC_INSERTED	0xB9
+#define MSR_WARN_ICC_REMOVED	0xB9
 
 #define MSR_MAX_SIZE_HOST_PACKET_DATA_FIELD	255
 #define MSR_SIZE_HOST_PACKET_HEADER	3	//the sum of size( c_cmd, c_sub, c_len )

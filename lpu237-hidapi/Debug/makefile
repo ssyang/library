@@ -9,6 +9,7 @@ RM := rm -rf
 # All of the sources participating in the build are defined here
 -include sources.mk
 -include src/subdir.mk
+-include pevents/subdir.mk
 -include subdir.mk
 -include objects.mk
 
@@ -43,20 +44,20 @@ all:
 	$(MAKE) --no-print-directory main-build
 
 # Main-build Target
-main-build: liblpu237-hidapi.0.1.0.so
+main-build: liblpu237-hidapi.so.0.1.0
 
 # Tool invocations
-liblpu237-hidapi.0.1.0.so: $(OBJS) $(USER_OBJS)
+liblpu237-hidapi.so.0.1.0: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -nostartfiles -shared -o "liblpu237-hidapi.0.1.0.so" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -shared -pthread -o "liblpu237-hidapi.so.0.1.0" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
 
 # Other Targets
 clean:
-	-$(RM) $(LIBRARIES)$(CC_DEPS)$(C++_DEPS)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) liblpu237-hidapi.0.1.0.so
+	-$(RM) $(LIBRARIES)$(CC_DEPS)$(C++_DEPS)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) liblpu237-hidapi.so.0.1.0
 	-@echo ' '
 
 pre-build:
@@ -66,7 +67,7 @@ pre-build:
 
 post-build:
 	-@echo 'generate symbloic link'
-	-ln -s liblpu237-hidapi.0.1.0.so liblpu237-hidapi.so
+	-ln -s liblpu237-hidapi.so.0.1.0 liblpu237-hidapi.so
 	-@echo ' '
 
 .PHONY: all clean dependents main-build pre-build post-build

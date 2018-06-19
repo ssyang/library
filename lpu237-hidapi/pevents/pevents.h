@@ -5,7 +5,9 @@
  * This code is released under the terms of the MIT License
 */
 
-#pragma once
+#ifndef __PEVENTS_H__
+#define __PEVENTS_H__
+
 
 #if defined(_WIN32) && !defined(CreateEvent)
 #error Must include Windows.h prior to including pevents.h!
@@ -40,3 +42,5 @@ namespace neosmart
 	//POSIX-style functions
 	//TBD
 }
+
+#endif	//__PEVENTS_H__
