@@ -8,12 +8,26 @@
 
 #include <iostream>
 
-#include <el_hidapi.h>
+#include "dll_lpu237.h"
 
 using namespace std;
 
 int main()
 {
-	cout << "!!!Hello World!!!" << endl; // prints !!!Hello World!!!
+	cout << " = start test = " << endl;
+
+	do{
+		dll_lpu237::get_instance().load(string("liblpu237-hidapi.so") );
+		if( !dll_lpu237::get_instance().is_setup_ok() ){
+			cout << " <> fail load " << string("liblpu237-hidapi.so") << "." << endl;
+			continue;
+		}
+
+		cout << " = ok load " << string("liblpu237-hidapi.so") << "." << endl;
+		//
+
+	}while(0);
+
+	cout << " = exit test = " << endl;
 	return 0;
 }
