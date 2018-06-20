@@ -28,6 +28,7 @@ inner_worker::inner_worker(type_fun_tx fun_tx, type_fun_rx fun_rx) :
  m_b_setup(false)
 , m_n_id(-1)
 , m_n_cur_result_index(1)
+, m_evet_kill(true,false)
 {
 	do{
 		if( m_evet_kill.get_handle() == NULL )
@@ -36,12 +37,12 @@ inner_worker::inner_worker(type_fun_tx fun_tx, type_fun_rx fun_rx) :
 			continue;
 		//
 		m_cur_job.b_process = 0;
-		m_cur_job.b_rx = 0;
 		m_cur_job.h_dev = 0;
-		m_cur_job.h_event_notify = 0;
 		m_cur_job.n_index = -1;
 		m_cur_job.ptr_rx = nullptr;
 		m_cur_job.ptr_tx = nullptr;
+		m_cur_job.fun_wait = NULL;
+		m_cur_job.p_parameter_for_fun_wait = NULL;
 		//
 		m_b_setup = _start();
 	}while(0);
@@ -193,8 +194,10 @@ bool inner_worker::_job_process()
 			continue;
 		if( m_cur_job.b_process ){
 			//cancel current job
-			m_cur_job.b_process = 0;
-			_notify_result( m_cur_job.n_index, result_fun_cancel, m_cur_job.ptr_rx,m_cur_job.h_event_notify );
+			m_cur_job.b_process = false;
+			if( m_cur_job.ptr_rx == nullptr )
+				m_cur_job.ptr_rx = type_ptr_buffer( new type_buffer(0));
+			_notify_result( m_cur_job.n_index, result_fun_cancel, *m_cur_job.ptr_rx );
 		}
 		//
 		type_job_item item;
@@ -206,7 +209,7 @@ bool inner_worker::_job_process()
 				_save_job_item( item );
 			else{
 				//cancel case
-				_notify_result( item.n_index, result_fun_success, nullptr, item.h_event_notify );
+				_notify_result( item.n_index, result_fun_success, type_buffer(0) );
 			}
 			continue;
 		}
@@ -215,7 +218,7 @@ bool inner_worker::_job_process()
 				_save_job_item( item );
 			else{
 				//cancel case
-				_notify_result( item.n_index, result_fun_success, nullptr, item.h_event_notify );
+				_notify_result( item.n_index, result_fun_success, type_buffer(0) );
 			}
 			continue;
 		}
@@ -224,7 +227,7 @@ bool inner_worker::_job_process()
 				_save_job_item( item );
 			else{
 				//cancel case
-				_notify_result( item.n_index, result_fun_success, nullptr, item.h_event_notify );
+				_notify_result( item.n_index, result_fun_success, type_buffer(0) );
 			}
 			continue;
 		}
@@ -242,7 +245,7 @@ bool inner_worker::_job_process()
 				}
 			case result_fun_error:
 			case result_fun_cancel:
-				_notify_result( item.n_index, result_fun, nullptr, item.h_event_notify );
+				_notify_result( item.n_index, result_fun, type_buffer(0) );
 				break;
 			case result_fun_ing:
 				b_tx_continue = true;
@@ -263,26 +266,26 @@ bool inner_worker::_idle_process()
 	bool b_continue_run = true;
 
 	do{
-		if( m_cur_job.b_process==0 )
-			continue;
-		if(	m_cur_job.b_rx == 0 )
-			continue;
 		if( m_fun_rx == 0 )
+			continue;
+		if( !m_cur_job.b_process )
 			continue;
 		//
 		type_result_fun result_fun = m_fun_rx( m_cur_job.h_dev, m_cur_job.ptr_tx );
 
-		m_cur_job.b_process = 0;//stop idle process
+		m_cur_job.b_process = false;//stop idle process
 
 		switch( result_fun ){
 		case result_fun_error:
-			m_cur_job.ptr_rx->resize(0);
+			m_cur_job.ptr_rx = nullptr;
 		case result_fun_cancel:
 		case result_fun_success:
-			_notify_result( m_cur_job.n_index, result_fun, m_cur_job.ptr_rx, m_cur_job.h_event_notify );
+			if( m_cur_job.ptr_rx == nullptr )
+				m_cur_job.ptr_rx = type_ptr_buffer( new type_buffer(0) );
+			_notify_result( m_cur_job.n_index, result_fun, *m_cur_job.ptr_rx  );
 			break;
 		case result_fun_ing:
-			m_cur_job.b_process = 0;	//continue idle process.
+			m_cur_job.b_process = true;	//continue idle process.
 			break;
 		default:
 			break;
@@ -293,11 +296,12 @@ bool inner_worker::_idle_process()
 	return b_continue_run;
 }
 
-bool inner_worker::_create_result( int n_index, type_result_fun result_fun, const type_ptr_buffer & ptr_rx )
+bool inner_worker::_create_result( int n_index )
 {
 	bool b_result = false;
 
 	do{
+		lock_guard<mutex> _lock (m_mutex_result);
 		if( n_index < 0 )
 			continue;
 		//
@@ -305,8 +309,30 @@ bool inner_worker::_create_result( int n_index, type_result_fun result_fun, cons
 		if( it != end(m_map_result) )
 			continue;//already exist result.
 		//
-		type_job_result result = { result_fun, ptr_rx };
+		type_job_result result = { result_fun_ing, nullptr, type_ptr_event( new inner_event(true,false) ) };
 		m_map_result[n_index] = result;
+		//
+		b_result = true;
+	}while(0);
+
+	return b_result;
+}
+
+bool inner_worker::_set_result( int n_index, type_result_fun result_fun, const type_buffer & v_rx )
+{
+	bool b_result = false;
+
+	do{
+		lock_guard<mutex> _lock (m_mutex_result);
+		if( n_index < 0 )
+			continue;
+		//
+		type_map_result::iterator it =  m_map_result.find(n_index);
+		if( it == end(m_map_result) )
+			continue;//not found
+		//
+		it->second.result_fun = result_fun;
+		it->second.ptr_rx = type_ptr_buffer( new type_buffer(v_rx) );
 		//
 		b_result = true;
 	}while(0);
@@ -319,6 +345,7 @@ bool inner_worker::_delete_result( int n_index )
 	bool b_result = false;
 
 	do{
+		lock_guard<mutex> _lock (m_mutex_result);
 		if( n_index < 0 )
 			continue;
 		//
@@ -335,47 +362,26 @@ bool inner_worker::_delete_result( int n_index )
 }
 
 int inner_worker::push_job(
-		inner_event & event_notify,
 		void *h_dev,
-		const unsigned char *s_tx, unsigned long n_tx,
-		bool b_need_rx /*= true*/,
-		int n_result_index /*= -1*/ )
-{
-	return push_job(
-			event_notify.get_handle()
-			, h_dev
-			, s_tx
-			, n_tx
-			, b_need_rx
-			, n_result_index
-			);
-}
-
-int inner_worker::push_job(
-		neosmart::neosmart_event_t h_event_notify,
-		void *h_dev,
-		const unsigned char *s_tx,
-		unsigned long n_tx,
-		bool b_need_rx /*= true*/,
-		int n_result_index /*= -1*/ )
+		type_buffer & v_tx,
+		LPU237_type_callback fun_wait,
+		void *p_parameter_for_fun_wait,
+		bool b_need_rx /*= true*/
+		)
 {
 	int n_index = -1;
-	unsigned char b_rx = 0;
 
 	do{
-		if( n_tx < 0 )
-			n_tx = 0;
-		if( b_need_rx )
-			b_rx = 1;
-		//
 		type_job_item item = {
-				h_event_notify,
 				h_dev,
-				type_ptr_buffer( new type_buffer(n_tx) ),
-				b_rx,
-				n_result_index };
-		if( n_tx > 0 )
-			memcpy( &((*item.ptr_tx)[0]), s_tx, n_tx );
+				type_ptr_buffer( new type_buffer(v_tx) ),
+				b_need_rx,
+
+				fun_wait,
+				p_parameter_for_fun_wait,
+
+				-1 //auto generation
+		};
 		//
 		n_index = push_job( item );
 	}while(0);
@@ -402,16 +408,24 @@ int inner_worker::push_job( type_job_item & item )
 			continue;
 		}
 
+		if( !_create_result( n_index ) ){
+			type_job_item item;
+			_job_pop( item );
+			n_index = -1;
+			continue;
+		}
+
 	}while(0);
 
 	return n_index;
 }
 
-bool inner_worker::get_result( int n_result_index, type_job_result & result )
+bool inner_worker::get_result_and_delete( int n_result_index, type_job_result & result )
 {
 	bool b_result = false;
 
 	do{
+		lock_guard<mutex> _lock (m_mutex_result);
 		type_map_result::iterator it =  m_map_result.find(n_result_index);
 		if( it == end(m_map_result) )
 			continue;//not found result.
@@ -425,25 +439,38 @@ bool inner_worker::get_result( int n_result_index, type_job_result & result )
 	return b_result;
 }
 
+inner_event *inner_worker::get_result_event( int n_result_index )
+{
+	inner_event *p_evet = NULL;
+
+	do{
+		lock_guard<mutex> _lock (m_mutex_result);
+		type_map_result::iterator it =  m_map_result.find(n_result_index);
+		if( it == end(m_map_result) )
+			continue;//not found result.
+
+		p_evet = it->second.ptr_event_notify.get();
+	}while(0);
+
+	return p_evet;
+}
+
 void inner_worker::_save_job_item(
 		const type_job_item & item
 		,bool b_enable_process /*=true*/
 		, bool b_save_tx /*= false*/
 		)
 {
-	if( b_enable_process )
-		m_cur_job.b_process = 1;
-	else
-		m_cur_job.b_process = 0;
-	//
-	m_cur_job.b_rx = item.b_rx;
-	m_cur_job.h_dev = item.h_dev;
-	m_cur_job.h_event_notify = item.h_event_notify;
-	m_cur_job.n_index = item.n_index;
-	m_cur_job.ptr_rx = type_ptr_buffer( new type_buffer(0) );
-
-	m_cur_job.ptr_tx = nullptr;
 	do{
+
+		m_cur_job.b_process = b_enable_process;
+		m_cur_job.h_dev = item.h_dev;
+		m_cur_job.n_index = item.n_index;
+		m_cur_job.ptr_rx = nullptr;
+		m_cur_job.ptr_tx = nullptr;
+		m_cur_job.fun_wait = item.fun_wait;
+		m_cur_job.p_parameter_for_fun_wait = item.p_parameter_for_fun_wait;
+
 		if( !b_save_tx )
 			continue;
 		if( item.ptr_tx == nullptr )
@@ -458,16 +485,20 @@ void inner_worker::_save_job_item(
 void inner_worker::_notify_result(
 		int n_index,
 		type_result_fun result_fun,
-		const type_ptr_buffer & ptr_rx,
-		neosmart::neosmart_event_t h_event_notify
+		const type_buffer & v_rx
 		)
 {
 	do{
-		if( !_create_result( n_index, result_fun, ptr_rx ) )
+		if( !_set_result( n_index, result_fun, v_rx ) )
 			continue;
-		if( h_event_notify == NULL )
+		inner_event *p_evet = get_result_event( n_index );
+		if( p_evet == NULL )
 			continue;
-		SetEvent( h_event_notify );//notify event
+		p_evet->set();
+
+		//call callback
+		if( m_cur_job.fun_wait )
+			m_cur_job.fun_wait( m_cur_job.p_parameter_for_fun_wait );
 	}while(0);
 }
 

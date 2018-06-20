@@ -33,6 +33,8 @@ static int _cmd_tx_rx(
 		, unsigned long & n_rx	//in - buffer size, out readdone size
 		, unsigned char *s_rx
 		, bool b_wait_response
+		, LPU237_type_callback cb
+		, void *p_parameter_for_cb
 		);
 
 
@@ -159,6 +161,8 @@ int _cmd_tx_rx(
 		, unsigned long & n_rx	//in - buffer size, out read-done size
 		, unsigned char *s_rx
 		, bool b_wait_response
+		, LPU237_type_callback cb
+		, void *p_parameter_for_cb
 		)
 {
 	int n_result_key = -1;
@@ -185,11 +189,11 @@ int _cmd_tx_rx(
 			memcpy( p_tx->s_data, s_data, n_data );
 		//
 		if( b_wait_response ){
-			inner_event event_wait;
 			n_result_key = inner_worker::get_instance().push_job(
-					event_wait
-					, h_dev
-					, &(v_tx[0]), v_tx.size()
+					h_dev
+					, v_tx
+					, cb
+					, p_parameter_for_cb
 					, b_need_response
 					);
 			//
@@ -197,9 +201,12 @@ int _cmd_tx_rx(
 				continue;//error
 			}
 
-			event_wait.wait(-1);//wait result
+			inner_event *p_evet = inner_worker::get_instance().get_result_event(n_result_key);
+			if( p_evet == NULL )
+				p_evet->wait( -1 );
+
 			inner_worker::type_job_result result;
-			if( !inner_worker::get_instance().get_result(n_result_key, result ) ){
+			if( !inner_worker::get_instance().get_result_and_delete( n_result_key, result ) ){
 				n_result_key = -1;//error
 				continue;
 			}
@@ -211,23 +218,16 @@ int _cmd_tx_rx(
 		}
 
 		// no wait part.
-		neosmart::neosmart_event_t h_evet = neosmart::CreateEvent();
-		if( h_evet == NULL )
-			continue;
 		n_result_key = inner_worker::get_instance().push_job(
-				h_evet
-				, h_dev
-				, &(v_tx[0]), v_tx.size()
+				h_dev
+				, v_tx
+				, cb
+				, p_parameter_for_cb
 				, b_need_response
 				);
 		//
 		if( n_result_key < 0 )
 			continue;//error
-		if( !inner_event::set_raw_event_to_map(n_result_key,h_evet ) ){
-			//todo ???????
-			continue;
-		}
-		//
 	}while(0);
 
 	return n_result_key;
@@ -487,6 +487,8 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HAND
 				, 0	, NULL
 				, n_rx , s_rx
 				, true//wait
+				, NULL
+				, NULL
 				);
 		if( result_index < 0 )
 			continue;
@@ -527,6 +529,8 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_enable( LPU237_HAND
 				, 0	, NULL
 				, n_rx , s_rx
 				, true//wait
+				, NULL
+				, NULL
 				);
 		if( result_index < 0 )
 			continue;
@@ -564,6 +568,8 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_disable( LPU237_HAN
 				, 0	, NULL
 				, n_rx , s_rx
 				, true//wait
+				, NULL
+				, NULL
 				);
 		if( result_index < 0 )
 			continue;
@@ -590,11 +596,12 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait_swipe( 
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		//
-		inner_event event_wait;
+		inner_worker::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
-				event_wait
-				, h_dev
-				, NULL, 0
+				(void *)h_dev
+				, v_tx
+				, NULL
+				, NULL
 				, false
 				);
 		//
@@ -602,9 +609,12 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait_swipe( 
 			continue;//error
 		}
 
-		event_wait.wait(-1);//wait result
+		inner_event *p_event = inner_worker::get_instance().get_result_event(n_result_key );
+		if( p_event )
+			p_event->wait(-1);
+
 		inner_worker::type_job_result result;
-		if( !inner_worker::get_instance().get_result(n_result_key, result ) ){
+		if( !inner_worker::get_instance().get_result_and_delete( n_result_key, result ) ){
 			n_result_key = -1;//error
 			continue;
 		}
@@ -629,11 +639,12 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_wai
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		//
-		inner_event event_wait;
+		inner_worker::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
-				event_wait
-				, h_dev
-				, NULL, 0
+				(void*)h_dev
+				, v_tx
+				, NULL
+				, NULL
 				, true
 				);
 		//
@@ -641,7 +652,10 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_wai
 			continue;//error
 		}
 
-		event_wait.wait(-1);//wait result
+		inner_event *p_event = inner_worker::get_instance().get_result_event(n_result_key);
+		if( p_event ){
+			p_event->wait(-1);
+		}
 
 		// success
 		dw_result = (unsigned long)n_result_key;
@@ -661,25 +675,19 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_cal
 			continue;
 		//
 		// no wait part.
-		neosmart::neosmart_event_t h_evet = neosmart::CreateEvent();
-		if( h_evet == NULL )
-			continue;
+		inner_worker::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
-				h_evet
-				, h_dev
-				, NULL, 0
+				h_dev
+				, v_tx
+				, p_fun, p_parameter
 				, true
 				);
 		//
 		if( n_result_key < 0 )
 			continue;//error
-		if( !inner_event::set_raw_event_to_map(n_result_key,h_evet ) ){
-			//todo ???????
-			continue;
-		}
 
 		// success
-		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		dw_result = (unsigned long)n_result_key;
 	}while(0);
 
 	return dw_result;
@@ -688,6 +696,12 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_cal
 unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned long dw_buffer_index, unsigned long dw_iso_track, unsigned char *s_track_data )
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	static inner_worker::type_job_result result = { inner_worker::result_fun_success, nullptr, nullptr };
+	static int n_cur_result_index = -1;
+	int n_new_result_index = (int)dw_buffer_index;
+	unsigned char *ps_data = 0;
+	int n_offset = 3;
+	int i = 0;
 
 	do{
 		// TODO.......
@@ -695,6 +709,55 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
+		if( dw_iso_track == 0 || dw_iso_track > 3 )
+			continue;
+		//
+		if( n_new_result_index != n_cur_result_index ){
+			if( !inner_worker::get_instance().get_result_and_delete(n_new_result_index,result ) )
+				continue;
+			//
+			n_cur_result_index = n_new_result_index;
+			result.ptr_event_notify.reset();
+			switch( result.result_fun ){
+			case inner_worker::result_fun_cancel:
+				dw_result = LPU237_DLL_RESULT_CANCEL;
+				continue;
+			case inner_worker::result_fun_error:
+				dw_result = LPU237_DLL_RESULT_ERROR;
+				continue;
+			case inner_worker::result_fun_success:
+				dw_result = LPU237_DLL_RESULT_SUCCESS;
+				if( result.ptr_rx == nullptr ){
+					dw_result = LPU237_DLL_RESULT_ERROR_MSR;
+					continue;
+				}
+				if( result.ptr_rx->size()<220){
+					dw_result = LPU237_DLL_RESULT_ERROR_MSR;
+					continue;
+				}
+
+				ps_data = &((*result.ptr_rx)[0]);
+				if( ((signed char)ps_data[dw_iso_track-1] )<0 ){
+					dw_result = LPU237_DLL_RESULT_ERROR_MSR;
+					continue;
+				}
+
+				dw_result = (unsigned long)ps_data[dw_iso_track-1];
+				if( s_track_data ){
+					for( i = 0; i< (int)dw_iso_track; i++ ){
+						if( ((signed char)ps_data[i] ) > 0 ){
+							n_offset += (int)ps_data[i];
+						}
+					}//end for
+
+					memcpy( s_track_data, &ps_data[n_offset], dw_result );
+				}
+				continue;
+			case inner_worker::result_fun_ing:
+			default:
+				continue;
+			}//end switch
+		}
 
 		// success
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
