@@ -44,30 +44,30 @@ all:
 	$(MAKE) --no-print-directory main-build
 
 # Main-build Target
-main-build: liblpu237-hidapi.so.0.1.0
+main-build: liblpu237-hidapi.so.1.0.0
 
 # Tool invocations
-liblpu237-hidapi.so.0.1.0: $(OBJS) $(USER_OBJS)
+liblpu237-hidapi.so.1.0.0: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -shared -pthread -o "liblpu237-hidapi.so.0.1.0" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -L"/home/totoro/work/library/hidapi/Release" -Wl,-rpath=. -shared -Wl,-soname=liblpu237-hidapi.so.1 -pthread -o "liblpu237-hidapi.so.1.0.0" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
 
 # Other Targets
 clean:
-	-$(RM) $(LIBRARIES)$(CC_DEPS)$(C++_DEPS)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) liblpu237-hidapi.so.0.1.0
+	-$(RM) $(LIBRARIES)$(CC_DEPS)$(C++_DEPS)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) liblpu237-hidapi.so.1.0.0
 	-@echo ' '
 
 pre-build:
 	-@echo 'remove symblic link'
-	-rm liblpu237-hidapi.so
+	-rm liblpu237-hidapi.so;rm liblpu237-hidapi.so.1
 	-@echo ' '
 
 post-build:
 	-@echo 'generate symbloic link'
-	-ln -s liblpu237-hidapi.so.0.1.0 liblpu237-hidapi.so
+	-ln -s liblpu237-hidapi.so.1.0.0 liblpu237-hidapi.so;ln -s liblpu237-hidapi.so.1.0.0 liblpu237-hidapi.so.1
 	-@echo ' '
 
 .PHONY: all clean dependents main-build pre-build post-build

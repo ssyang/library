@@ -109,7 +109,7 @@ bool inner_worker::_start()
 	int n_result = 0;
 
 	do{
-		if( m_n_id >= 0 )
+		if( m_n_id != (pthread_t)-1 )
 			continue;//already started
 		//
 		n_result = pthread_create(&m_n_id, NULL, inner_worker::_worker, (void *)this);

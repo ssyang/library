@@ -38,27 +38,37 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: libhidapi.0.8.0.so
+all:
+	$(MAKE) --no-print-directory pre-build
+	$(MAKE) --no-print-directory main-build
+
+# Main-build Target
+main-build: libhidapi.so.0.8.0
 
 # Tool invocations
-libhidapi.0.8.0.so: $(OBJS) $(USER_OBJS)
+libhidapi.so.0.8.0: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -nostartfiles -shared -o "libhidapi.0.8.0.so" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -shared -Wl,-soname=libhidapi.so.0 -o "libhidapi.so.0.8.0" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
 
 # Other Targets
 clean:
-	-$(RM) $(LIBRARIES)$(CC_DEPS)$(C++_DEPS)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) libhidapi.0.8.0.so
+	-$(RM) $(LIBRARIES)$(CC_DEPS)$(C++_DEPS)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) libhidapi.so.0.8.0
+	-@echo ' '
+
+pre-build:
+	-@echo 'remove symbloic link'
+	-rm libhidapi.so;rm libhidapi.so.0
 	-@echo ' '
 
 post-build:
 	-@echo 'generates symblic link'
-	-ln -s libhidapi.0.8.0.so libhidapi.so
+	-ln -s libhidapi.so.0.8.0 libhidapi.so;ln -s libhidapi.so.0.8.0 libhidapi.so.0
 	-@echo ' '
 
-.PHONY: all clean dependents post-build
+.PHONY: all clean dependents main-build pre-build post-build
 
 -include ../makefile.targets

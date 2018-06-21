@@ -6,10 +6,8 @@
  */
 
 #include "lpu237-hidapi.h"
-#include "el_hidapi.h"
+#include "hidapi.h"
 #include "msr_com.h"
-
-#include "inner_dll.h"
 
 #include <dlfcn.h>
 #include <inner_worker.h>
@@ -80,7 +78,7 @@ inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::typ
 
 			memcpy( &s_out_report[1], &s_tx[n_offset],n_packet );
 			//
-			n_written = inner_dll::get_instance().hid_write( (hid_device*)h_dev,s_out_report, n_packet+1 );
+			n_written = hid_write( (hid_device*)h_dev,s_out_report, n_packet+1 );
 			if( n_written < 0 ){
 				n_result = 0;
 				break;//error
@@ -111,11 +109,11 @@ inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_
 	unsigned long n_offset = 0;
 
 	do{
-		n_result = inner_dll::get_instance().hid_set_nonblocking((hid_device *)h_dev, 1 );
+		n_result = hid_set_nonblocking((hid_device *)h_dev, 1 );
 		if( n_result != 0 )
 			continue;
 		//
-		n_read = inner_dll::get_instance().hid_read((hid_device*)h_dev, s_in_report, n_in_report);
+		n_read = hid_read((hid_device*)h_dev, s_in_report, n_in_report);
 
 		if( n_read < 0 )
 			continue;
@@ -239,15 +237,12 @@ int _cmd_tx_rx(
 unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_on()
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	string s_lib("libhidapi.so");
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() ){
-			if( !inner_dll::get_instance().load( string("libhidapi.so")) )
-				continue;
-		}
 		if( !inner_worker::get_instance(_tx_callback,_rx_callback).is_setup_ok() )
 			continue;
-		if( inner_dll::get_instance().hid_init() != 0 )
+		if( hid_init() != 0 )
 			continue;
 		// success
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
@@ -261,11 +256,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_off()
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
-		inner_dll::get_instance().hid_exit();
+		hid_exit();
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
 	}while(0);
 
@@ -283,12 +276,10 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_w(wchar_t 
 	size_t n_size = 0;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		//
-		devs = inner_dll::get_instance().hid_enumerate(_USB_VID_LPU237, _USB_PID_LPU237);
+		devs = hid_enumerate(_USB_VID_LPU237, _USB_PID_LPU237);
 		if( devs == NULL ){
 			dw_result = 0;
 			continue;//no device
@@ -320,7 +311,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_w(wchar_t 
 				cur_dev = cur_dev->next;
 			}
 		}//end while
-		inner_dll::get_instance().hid_free_enumeration(devs);
+		hid_free_enumeration(devs);
 		if( n_size < 0 ){
 			continue;//error exit
 		}
@@ -348,12 +339,10 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_a(char *ss
 	size_t n_size = 0;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		//
-		devs = inner_dll::get_instance().hid_enumerate(_USB_VID_LPU237, _USB_PID_LPU237);
+		devs = hid_enumerate(_USB_VID_LPU237, _USB_PID_LPU237);
 		if( devs == NULL ){
 			dw_result = 0;
 			continue;//no device
@@ -375,7 +364,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_a(char *ss
 			n_offset++;
 			cur_dev = cur_dev->next;
 		}//end while
-		inner_dll::get_instance().hid_free_enumeration(devs);
+		hid_free_enumeration(devs);
 		if( n_size < 0 ){
 			continue;//error exit
 		}
@@ -401,8 +390,6 @@ LPU237_HANDLE LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_open_w( const wchar
 	hid_device *p_hid = NULL;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		if( s_dev_path == NULL )
@@ -412,7 +399,7 @@ LPU237_HANDLE LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_open_w( const wchar
 		if( n_size <= 0)
 			continue;
 
-		p_hid = inner_dll::get_instance().hid_open_path( s_path );
+		p_hid = hid_open_path( s_path );
 		if( p_hid == NULL )
 			continue;
 
@@ -429,14 +416,12 @@ LPU237_HANDLE LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_open_a( const char 
 	hid_device *p_hid = NULL;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		if( s_dev_path == NULL )
 			continue;
 		//
-		p_hid = inner_dll::get_instance().hid_open_path( s_dev_path );
+		p_hid = hid_open_path( s_dev_path );
 		if( p_hid == NULL )
 			continue;
 
@@ -451,14 +436,12 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_close( LPU237_HANDL
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		if( h_dev == NULL )
 			continue;
 		//
-		inner_dll::get_instance().hid_close( (hid_device*)h_dev );
+		hid_close( (hid_device*)h_dev );
 
 		// success
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
@@ -472,8 +455,6 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HAND
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		//
@@ -514,8 +495,6 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_enable( LPU237_HAND
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		//
@@ -553,8 +532,6 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_disable( LPU237_HAN
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		//
@@ -591,8 +568,6 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait_swipe( 
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		//
@@ -634,8 +609,6 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_wai
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		//
@@ -669,8 +642,6 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_cal
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
 	do{
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		//
@@ -704,9 +675,6 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 	int i = 0;
 
 	do{
-		// TODO.......
-		if( !inner_dll::get_instance().is_setup_ok() )
-			continue;
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
 		if( dw_iso_track == 0 || dw_iso_track > 3 )

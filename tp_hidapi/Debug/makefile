@@ -44,7 +44,7 @@ all: tp_hidapi
 tp_hidapi: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C++ Linker'
-	g++ -ldl -o "tp_hidapi" $(OBJS) $(USER_OBJS) $(LIBS)
+	g++ -Wl,-rpath=. -o "tp_hidapi" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
