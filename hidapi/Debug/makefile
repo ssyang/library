@@ -38,12 +38,7 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all:
-	$(MAKE) --no-print-directory pre-build
-	$(MAKE) --no-print-directory main-build
-
-# Main-build Target
-main-build: libhidapi.so.0.8.0
+all: libhidapi.so.0.8.0
 
 # Tool invocations
 libhidapi.so.0.8.0: $(OBJS) $(USER_OBJS)
@@ -59,16 +54,11 @@ clean:
 	-$(RM) $(LIBRARIES)$(CC_DEPS)$(C++_DEPS)$(C_UPPER_DEPS)$(CXX_DEPS)$(OBJS)$(CPP_DEPS)$(C_DEPS) libhidapi.so.0.8.0
 	-@echo ' '
 
-pre-build:
-	-@echo 'remove symbloic link'
-	-rm libhidapi.so;rm libhidapi.so.0
-	-@echo ' '
-
 post-build:
 	-@echo 'generates symblic link'
-	-ln -s libhidapi.so.0.8.0 libhidapi.so;ln -s libhidapi.so.0.8.0 libhidapi.so.0
+	-rm /home/totoro/work/library/common/hidapi/lib/Debug/libhidapi.so;cp -f libhidapi.so.0.8.0 /home/totoro/work/library/common/hidapi/lib/Debug;cp -f libhidapi.so.0.8.0 /home/totoro/work/library/tp_hidapi/Debug;ln -s /home/totoro/work/library/common/hidapi/lib/Debug/libhidapi.so.0.8.0 /home/totoro/work/library/common/hidapi/lib/Debug/libhidapi.so
 	-@echo ' '
 
-.PHONY: all clean dependents main-build pre-build post-build
+.PHONY: all clean dependents post-build
 
 -include ../makefile.targets

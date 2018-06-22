@@ -149,20 +149,20 @@ void* inner_worker::_worker(void *p_data)
 	bool b_run = true;
 	int n_result_wait = 0;
 	int n_index_event = 0;
-	vector<neosmart::neosmart_event_t> v_events(0);
+	neosmart::neosmart_event_t events[] = {
+			inner_worker::get_instance().m_evet_wakeup.get_handle(),
+			inner_worker::get_instance().m_evet_kill.get_handle()
+	};
 
-	v_events.push_back( inner_worker::get_instance().m_evet_wakeup.get_handle() );
-	v_events.push_back( inner_worker::get_instance().m_evet_kill.get_handle() );
-	v_events.resize(2);
 	//
 	do{
 		n_result_wait = WaitForMultipleEvents(
-				&v_events[0], v_events.size(), false, const_worker_timeout_wait, n_index_event
+				events, 2, false, const_worker_timeout_wait, n_index_event
 				);
 
 		switch( n_result_wait ){
 		case 0://success
-			if( n_index_event >= (int)v_events.size() )
+			if( n_index_event >= 2 )
 				break;
 			//
 			if( n_index_event == 1){
