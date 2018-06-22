@@ -29,6 +29,8 @@ inner_worker::inner_worker(type_fun_tx fun_tx, type_fun_rx fun_rx) :
 , m_n_id(-1)
 , m_n_cur_result_index(1)
 , m_evet_kill(true,false)
+, m_fun_tx(fun_tx)
+, m_fun_rx(fun_rx)
 {
 	do{
 		if( m_evet_kill.get_handle() == NULL )
@@ -44,7 +46,6 @@ inner_worker::inner_worker(type_fun_tx fun_tx, type_fun_rx fun_rx) :
 		m_cur_job.fun_wait = NULL;
 		m_cur_job.p_parameter_for_fun_wait = NULL;
 		//
-		m_b_setup = _start();
 	}while(0);
 }
 
@@ -103,7 +104,7 @@ bool inner_worker::_job_is_empty()
 	return b_result;
 }
 
-bool inner_worker::_start()
+bool inner_worker::start_worker()
 {
 	bool b_result = false;
 	int n_result = 0;
@@ -118,15 +119,17 @@ bool inner_worker::_start()
 			continue;
 		}
 		//success
+		m_b_setup = true;
 		b_result = true;
 	}while(0);
+
 	return b_result;
 }
 
 bool inner_worker::_stop()
 {
 	bool b_result = 0;
-	int n_status = 0;
+	void *p_status = NULL;
 
 	do{
 		if( m_n_id == (pthread_t)-1 )
@@ -135,7 +138,7 @@ bool inner_worker::_stop()
 			continue;
 		m_evet_kill.set();
 
-		pthread_join(m_n_id,(void **)&n_status);
+		pthread_join(m_n_id,&p_status);
 
 		b_result = true;
 	}while(0);
@@ -145,7 +148,9 @@ bool inner_worker::_stop()
 
 void* inner_worker::_worker(void *p_data)
 {
-	void *p_result = NULL;
+	static int n_return_val = 0;
+
+	//void *p_result = NULL;
 	bool b_run = true;
 	int n_result_wait = 0;
 	int n_index_event = 0;
@@ -182,7 +187,8 @@ void* inner_worker::_worker(void *p_data)
 		}//end switch
 	}while(b_run);
 
-	return p_result;
+	pthread_exit((void*)&n_return_val);
+	//return p_result;
 }
 
 bool inner_worker::_job_process()
@@ -271,7 +277,7 @@ bool inner_worker::_idle_process()
 		if( !m_cur_job.b_process )
 			continue;
 		//
-		type_result_fun result_fun = m_fun_rx( m_cur_job.h_dev, m_cur_job.ptr_tx );
+		type_result_fun result_fun = m_fun_rx( m_cur_job.h_dev, m_cur_job.ptr_rx );
 
 		m_cur_job.b_process = false;//stop idle process
 
@@ -415,6 +421,7 @@ int inner_worker::push_job( type_job_item & item )
 			continue;
 		}
 
+		m_evet_wakeup.set();
 	}while(0);
 
 	return n_index;
@@ -431,6 +438,7 @@ bool inner_worker::get_result_and_delete( int n_result_index, type_job_result & 
 			continue;//not found result.
 		//
 		result = it->second;
+
 		m_map_result.erase(it);
 		//
 		b_result = true;

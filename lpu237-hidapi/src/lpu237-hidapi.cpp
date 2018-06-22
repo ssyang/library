@@ -19,6 +19,7 @@
 #define	_USB_VID_LPU237	0x134b
 #define	_USB_PID_LPU237	0x0206
 #define	_USB_INF_LPU237	1
+#define	_SIZE_UID	16
 //
 static inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::type_ptr_buffer & ptr_tx );
 static inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_buffer & ptr_rx );
@@ -78,7 +79,7 @@ inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::typ
 
 			memcpy( &s_out_report[1], &s_tx[n_offset],n_packet );
 			//
-			n_written = hid_write( (hid_device*)h_dev,s_out_report, n_packet+1 );
+			n_written = hid_write( (hid_device*)h_dev,s_out_report, n_out_report+1 );
 			if( n_written < 0 ){
 				n_result = 0;
 				break;//error
@@ -200,7 +201,7 @@ int _cmd_tx_rx(
 			}
 
 			inner_event *p_evet = inner_worker::get_instance().get_result_event(n_result_key);
-			if( p_evet == NULL )
+			if( p_evet )
 				p_evet->wait( -1 );
 
 			inner_worker::type_job_result result;
@@ -212,6 +213,16 @@ int _cmd_tx_rx(
 				n_result_key = -1;//error
 				continue;
 			}
+
+			if( result.ptr_rx == nullptr )
+				continue;
+			if( result.ptr_rx->size() == 0 )
+				continue;
+			if( n_rx == 0 || s_rx == NULL )
+				continue;
+			if( n_rx > result.ptr_rx->size())
+				n_rx = result.ptr_rx->size();
+			memcpy( s_rx, &((*result.ptr_rx)[0]), n_rx );
 			continue;
 		}
 
@@ -240,7 +251,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_on()
 	string s_lib("libhidapi.so");
 
 	do{
-		if( !inner_worker::get_instance(_tx_callback,_rx_callback).is_setup_ok() )
+		if( inner_worker::get_instance(_tx_callback,_rx_callback).is_setup_ok() )
+			continue;
+		if( !inner_worker::get_instance().start_worker() )
 			continue;
 		if( hid_init() != 0 )
 			continue;
@@ -357,11 +370,14 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_a(char *ss
 			n_dev++;
 			//
 			//wcslen(cur_dev->path)
-			n_size_byte = (strlen(cur_dev->path)+1) * sizeof(char);
+			n_size_byte += ((strlen(cur_dev->path)+1) * sizeof(char));
 
-			strcpy( &ss_dev_path[n_offset], cur_dev->path );
-			ss_dev_path[n_offset] = 0;//make zero string.
-			n_offset++;
+			if( ss_dev_path ){
+				strcpy( &ss_dev_path[n_offset], cur_dev->path );
+				n_offset += strlen(cur_dev->path);
+				ss_dev_path[n_offset] = 0;//make zero string.
+				n_offset++;
+			}
 			cur_dev = cur_dev->next;
 		}//end while
 		hid_free_enumeration(devs);
@@ -457,7 +473,13 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HAND
 	do{
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
+		if( h_dev == NULL  )
+			continue;
 		//
+		if( s_id == NULL ){
+			dw_result = _SIZE_UID;
+			continue;
+		}
 		unsigned long n_rx = 220;
 		unsigned char s_rx[220+1] = { 0, };
 
@@ -484,7 +506,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HAND
 		}
 
 		// success
-		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		dw_result = _SIZE_UID;
 	}while(0);
 
 	return dw_result;
@@ -496,6 +518,8 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_enable( LPU237_HAND
 
 	do{
 		if( !inner_worker::get_instance().is_setup_ok() )
+			continue;
+		if( h_dev == NULL  )
 			continue;
 		//
 		unsigned long n_rx = 220;
@@ -517,11 +541,15 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_enable( LPU237_HAND
 		type_pmsr_host_packet p_packet = (type_pmsr_host_packet)s_rx;
 		if( p_packet->c_rsp != 'R' )
 			continue;
-		if( p_packet->c_sub != msr_rsp_good )
+		if( p_packet->c_sub == msr_rsp_error_invalid ){
+			//already enabled
+			dw_result = LPU237_DLL_RESULT_SUCCESS;
 			continue;
-
-		// success
-		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		}
+		if( p_packet->c_sub == msr_rsp_good ){
+			dw_result = LPU237_DLL_RESULT_SUCCESS;
+			continue;
+		}
 	}while(0);
 
 	return dw_result;
@@ -533,6 +561,8 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_disable( LPU237_HAN
 
 	do{
 		if( !inner_worker::get_instance().is_setup_ok() )
+			continue;
+		if( h_dev == NULL  )
 			continue;
 		//
 		unsigned long n_rx = 220;
@@ -569,6 +599,8 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait_swipe( 
 
 	do{
 		if( !inner_worker::get_instance().is_setup_ok() )
+			continue;
+		if( h_dev == NULL  )
 			continue;
 		//
 		inner_worker::type_buffer v_tx(0);
@@ -611,6 +643,8 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_wai
 	do{
 		if( !inner_worker::get_instance().is_setup_ok() )
 			continue;
+		if( h_dev == NULL  )
+			continue;
 		//
 		inner_worker::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
@@ -643,6 +677,8 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_cal
 
 	do{
 		if( !inner_worker::get_instance().is_setup_ok() )
+			continue;
+		if( h_dev == NULL  )
 			continue;
 		//
 		// no wait part.

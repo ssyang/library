@@ -80,6 +80,7 @@ public:
 	static inner_worker & get_instance(type_fun_tx fun_tx=NULL, type_fun_rx fun_rx=NULL);
 
 	bool is_setup_ok();
+	bool start_worker();
 	void kill_worker();
 
 	// return result map key
@@ -104,7 +105,6 @@ private:
 private:
 	inner_worker(type_fun_tx fun_tx, type_fun_rx fun_rx);
 
-	bool _start();
 	bool _stop();
 
 	bool _job_process();
