@@ -6,16 +6,19 @@
 CPP_SRCS += \
 ../src/inner_event.cpp \
 ../src/inner_worker.cpp \
+../src/log_util.cpp \
 ../src/lpu237-hidapi.cpp 
 
 OBJS += \
 ./src/inner_event.o \
 ./src/inner_worker.o \
+./src/log_util.o \
 ./src/lpu237-hidapi.o 
 
 CPP_DEPS += \
 ./src/inner_event.d \
 ./src/inner_worker.d \
+./src/log_util.d \
 ./src/lpu237-hidapi.d 
 
 
