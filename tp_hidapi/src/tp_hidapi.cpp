@@ -37,6 +37,10 @@ int main( int argc, char **argv )
 	bool b_off_need = false;
 	LPU237_HANDLE h_dev = NULL;
 	unsigned long n_result(LPU237_DLL_RESULT_SUCCESS);
+	unsigned long n_result_index = -1;
+	unsigned char n_track = 0;
+	vector<unsigned char> v_track(0);
+	int n_test = 0;
 
 	do{
 		string s_path("liblpu237-hidapi.so");
@@ -123,51 +127,46 @@ int main( int argc, char **argv )
 
 		//++++++++++++++++++++++++++++++++++++++
 		// 6. reading msr by sync pattern.
-		cout << " ******* read your card ******* " <<endl;
-		unsigned long n_result_index = dll_lpu237::get_instance().LPU237_wait_swipe_with_waits(h_dev);
-		if( n_result_index == LPU237_DLL_RESULT_ERROR ){
-			cout << " <> fail LPU237_wait_swipe_with_waits. "<< endl;
-			continue;
-		}
-		cout << " = ok LPU237_wait_swipe_with_waits =  " << n_result_index << endl;
+		for( n_test = 0; n_test<10; n_test++ ){
+			cout << " ******* read your card ******* " <<endl;
+			n_result_index = dll_lpu237::get_instance().LPU237_wait_swipe_with_waits(h_dev);
+			if( n_result_index == LPU237_DLL_RESULT_ERROR ){
+				cout << " <> fail LPU237_wait_swipe_with_waits. "<< endl;
+				continue;
+			}
+			cout << " = ok LPU237_wait_swipe_with_waits =  " << n_result_index << endl;
 
-		unsigned char n_track = 0;
-		vector<unsigned char> v_track(0);
+			n_track = 0;
 
-		for( n_track = 0; n_track<3; n_track++ ){
-			v_track.resize(0);
-
-			n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, NULL );
-			switch(n_result){
-			case LPU237_DLL_RESULT_ERROR:
-				cout << " <> error msr read - LPU237_DLL_RESULT_ERROR" << endl;
-				break;
-			case LPU237_DLL_RESULT_CANCEL:
-				cout << " <> error msr read - LPU237_DLL_RESULT_CANCEL" << endl;
-				break;
-			case LPU237_DLL_RESULT_ERROR_MSR:
-				cout << " <> error msr read - LPU237_DLL_RESULT_ERROR_MSR" << endl;
-				break;
-			default:
-				if( n_result == 0){
-					cout << " = ok msr read - no data" << endl;
+			for( n_track = 0; n_track<3; n_track++ ){
+				v_track.resize(0);
+				n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, NULL );
+				switch(n_result){
+				case LPU237_DLL_RESULT_ERROR:
+					cout << " <> error msr read - LPU237_DLL_RESULT_ERROR" << endl;
+					continue;
+				case LPU237_DLL_RESULT_CANCEL:
+					cout << " <> error msr read - LPU237_DLL_RESULT_CANCEL" << endl;
+					continue;
+				case LPU237_DLL_RESULT_ERROR_MSR:
+					cout << " <> error msr read - LPU237_DLL_RESULT_ERROR_MSR" << endl;
+					continue;
+				default:
+					if( n_result == 0){
+						cout << " = ok msr read - no data" << endl;
+						continue;
+					}
+					v_track.resize(n_result,0);
 					break;
-				}
+				}//end switch
 				//
-				v_track.resize(n_result,0);
-				continue;
-			}//end switch
-
-			//
-			if( v_track.size() == 0 )
-				continue;
-			//
-			n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, &v_track[0] );
-			for_each( begin(v_track), end(v_track), [=](unsigned char c){
-				cout << (char)c << ',';
-			});
-			cout << endl;
-		}//end for
+				n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, &v_track[0] );
+				for_each( begin(v_track), end(v_track), [=](unsigned char c){
+					cout << (char)c;
+				});
+				cout << endl;
+			}//end for
+		}//end for n_test times
 
 
 		//++++++++++++++++++++++++++++++++++++++

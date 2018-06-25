@@ -527,7 +527,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_enable( LPU237_HAND
 
 		int result_index = _cmd_tx_rx(
 				(hid_device *)h_dev
-				, msr_cmd_leave_cs
+				, msr_cmd_enter_opos //msr_cmd_leave_cs
 				, 0
 				, 0	, NULL
 				, n_rx , s_rx
@@ -570,7 +570,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_disable( LPU237_HAN
 
 		int result_index = _cmd_tx_rx(
 				(hid_device *)h_dev
-				, msr_cmd_enter_cs
+				, msr_cmd_leave_opos//msr_cmd_enter_cs
 				, 0
 				, 0	, NULL
 				, n_rx , s_rx
@@ -717,54 +717,61 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 			continue;
 		//
 		if( n_new_result_index != n_cur_result_index ){
+			// get new data.
 			if( !inner_worker::get_instance().get_result_and_delete(n_new_result_index,result ) )
 				continue;
 			//
 			n_cur_result_index = n_new_result_index;
+			//
 			result.ptr_event_notify.reset();
-			switch( result.result_fun ){
-			case inner_worker::result_fun_cancel:
-				dw_result = LPU237_DLL_RESULT_CANCEL;
-				continue;
-			case inner_worker::result_fun_error:
-				dw_result = LPU237_DLL_RESULT_ERROR;
-				continue;
-			case inner_worker::result_fun_success:
-				dw_result = LPU237_DLL_RESULT_SUCCESS;
-				if( result.ptr_rx == nullptr ){
-					dw_result = LPU237_DLL_RESULT_ERROR_MSR;
-					continue;
-				}
-				if( result.ptr_rx->size()<220){
-					dw_result = LPU237_DLL_RESULT_ERROR_MSR;
-					continue;
-				}
-
-				ps_data = &((*result.ptr_rx)[0]);
-				if( ((signed char)ps_data[dw_iso_track-1] )<0 ){
-					dw_result = LPU237_DLL_RESULT_ERROR_MSR;
-					continue;
-				}
-
-				dw_result = (unsigned long)ps_data[dw_iso_track-1];
-				if( s_track_data ){
-					for( i = 0; i< (int)dw_iso_track; i++ ){
-						if( ((signed char)ps_data[i] ) > 0 ){
-							n_offset += (int)ps_data[i];
-						}
-					}//end for
-
-					memcpy( s_track_data, &ps_data[n_offset], dw_result );
-				}
-				continue;
-			case inner_worker::result_fun_ing:
-			default:
-				continue;
-			}//end switch
 		}
 
-		// success
-		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		switch( result.result_fun ){
+		case inner_worker::result_fun_cancel:
+			dw_result = LPU237_DLL_RESULT_CANCEL;
+			continue;
+		case inner_worker::result_fun_success:
+			dw_result = 0;
+			if( result.ptr_rx == nullptr ){
+				dw_result = LPU237_DLL_RESULT_ERROR_MSR;
+				continue;
+			}
+			if( result.ptr_rx->size()<220){
+				dw_result = LPU237_DLL_RESULT_ERROR_MSR;
+				continue;
+			}
+
+			ps_data = &((*result.ptr_rx)[0]);
+			if( ((signed char)ps_data[dw_iso_track-1] )<0 ){
+				dw_result = LPU237_DLL_RESULT_ERROR_MSR;
+				continue;
+			}
+
+			dw_result = (unsigned long)ps_data[dw_iso_track-1];
+			if( s_track_data ){
+				for( i = 0; i< (int)(dw_iso_track-1); i++ ){
+					if( ((signed char)ps_data[i] ) > 0 ){
+						n_offset += (int)ps_data[i];
+					}
+				}//end for
+
+				//convert to ASCII code.
+				for( i=0; i<(int)dw_result; i++ ){
+					if( dw_iso_track == 1 ){
+						s_track_data[i] = ps_data[n_offset+i] + 0x20;
+					}
+					else{
+						s_track_data[i] = ps_data[n_offset+i] + 0x30;
+					}
+				}//end for
+			}
+			break;
+		case inner_worker::result_fun_ing:
+		case inner_worker::result_fun_error:
+		default:
+			break;
+		}//end switch
+
 	}while(0);
 
 	return dw_result;
