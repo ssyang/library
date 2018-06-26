@@ -191,6 +191,9 @@ extern "C" {
 		*/
 		HID_API_EXPORT hid_device * HID_API_CALL hid_open_path(const char *path);
 
+		//On success, these system calls return zero. On error, -1 is returned, and errno is set appropriately.
+		int  HID_API_EXPORT HID_API_CALL hid_flush(hid_device *device);
+
 		/** @brief Write an Output report to a HID device.
 
 			The first byte of @p data[] must contain the Report ID. For

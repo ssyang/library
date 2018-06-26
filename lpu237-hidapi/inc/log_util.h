@@ -3,6 +3,8 @@
 #ifndef	__LOG__UTIL__
 #define	__LOG__UTIL__
 
+#include <stdio.h>
+
 #define LOG_LVL_TRACE	50
 #define LOG_LVL_DEBUG	40
 #define LOG_LVL_INFO		30
@@ -22,7 +24,9 @@ int LOGsetInfo(const char *dir, const char *prefix);
 * log_type, 로그생성일시분초microseconds, process id, 소스파일, 함수명, 라인수, 오류 내용
 * 의 format으로 로그를 생성함.
 */
-int LOGlogging(char log_type, const char *src_file, const char *func, int line_no, const char *fmt, ...);
+int LOGlogging(char log_type
+		, const char *src_file, const char *func, int line_no
+		, const char *fmt,va_list arg);
 
 /**
 * log level을 조정합니다.

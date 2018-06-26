@@ -22,6 +22,7 @@
 #define	_USB_INF_LPU237	1
 #define	_SIZE_UID	16
 //
+static inner_worker::type_result_fun _flush_callback( void *h_dev );
 static inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::type_ptr_buffer & ptr_tx );
 static inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_buffer & ptr_rx );
 static int _cmd_tx_rx(
@@ -40,8 +41,24 @@ static int _cmd_tx_rx(
 static unsigned long _single_cmd( LPU237_HANDLE h_dev,type_msr_cmd cmd );
 static unsigned long _enter_opos( LPU237_HANDLE h_dev );
 static unsigned long _leave_opos( LPU237_HANDLE h_dev );
+
+static const string & _get_return_string( unsigned long n_result );
 /////////////////////////////////////////////////////
 //local function body.
+inner_worker::type_result_fun _flush_callback( void *h_dev )
+{
+	inner_worker::type_result_fun result_fun =  inner_worker::result_fun_error;
+
+	do{
+		if( h_dev == 0 )
+			continue;
+		if( hid_flush( (hid_device*)h_dev ) != 0 )
+			continue;
+		result_fun = inner_worker::result_fun_success;
+	}while(0);
+
+	return result_fun;
+}
 
 inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::type_ptr_buffer & ptr_tx )
 {
@@ -288,6 +305,37 @@ unsigned long _leave_opos( LPU237_HANDLE h_dev )
 	return _single_cmd( h_dev, msr_cmd_leave_opos );
 }
 
+const string & _get_return_string( unsigned long n_result )
+{
+	static string s_result("");
+
+	switch( n_result ){
+	case LPU237_DLL_RESULT_SUCCESS:
+		s_result = "LPU237_DLL_RESULT_SUCCESS";
+		break;
+	case LPU237_DLL_RESULT_ERROR:
+		s_result = "LPU237_DLL_RESULT_ERROR";
+		break;
+	case LPU237_DLL_RESULT_CANCEL:
+		s_result = "LPU237_DLL_RESULT_CANCEL";
+		break;
+	case LPU237_DLL_RESULT_ERROR_MSR:
+		s_result = "LPU237_DLL_RESULT_ERROR_MSR";
+		break;
+	case LPU237_DLL_RESULT_ICC_INSERTED:
+		s_result = "LPU237_DLL_RESULT_ICC_INSERTED";
+		break;
+	case LPU237_DLL_RESULT_ICC_REMOVED:
+		s_result = "LPU237_DLL_RESULT_ICC_REMOVED";
+		break;
+	default:
+		s_result = to_string(n_result);
+		break;
+	}//end switch
+
+	return s_result;
+}
+
 /////////////////////////////////////////////////////
 //exported function body.
 
@@ -296,18 +344,24 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_on()
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 	string s_lib("libhidapi.so");
 
-	inner_log::get_instance().log_info("+LPU237_dll_on");
+	LOG_INFO("+LPU237_dll_on");
 	do{
-		if( inner_worker::get_instance(_tx_callback,_rx_callback).is_setup_ok() )
+		if( inner_worker::get_instance(_tx_callback,_rx_callback, _flush_callback).is_setup_ok() ){
+			LOG_WARNING("is_setup_ok()");
 			continue;
-		if( !inner_worker::get_instance().start_worker() )
+		}
+		if( !inner_worker::get_instance().start_worker() ){
+			LOG_ERROR("start_worker()");
 			continue;
-		if( hid_init() != 0 )
+		}
+		if( hid_init() != 0 ){
+			LOG_ERROR("hid_init()");
 			continue;
+		}
 		// success
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
 	}while(0);
-	inner_log::get_instance().log_info("-LPU237_dll_on");
+	LOG_INFO("-LPU237_dll_on : %s",_get_return_string(dw_result).c_str() );
 
 	return dw_result;
 }
@@ -315,14 +369,19 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_on()
 unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_off()
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
-	inner_log::get_instance().log_info("+LPU237_dll_off");
+
+	LOG_INFO("+LPU237_dll_off");
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
-		hid_exit();
+		}
+		if( hid_exit() != 0 ){
+			LOG_ERROR("hid_exit()");
+		}
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
 	}while(0);
-	inner_log::get_instance().log_info("-LPU237_dll_off");
+	LOG_INFO("-LPU237_dll_off : %s",_get_return_string(dw_result).c_str() );
 
 	return dw_result;
 }
@@ -337,14 +396,17 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_w(wchar_t 
 	size_t n_offset = 0;
 	size_t n_size = 0;
 
-	inner_log::get_instance().log_info("+LPU237_get_list_w");
+	LOG_INFO("+LPU237_get_list_w : 0x%X",ss_dev_path);
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
+		}
 		//
 		devs = hid_enumerate(_USB_VID_LPU237, _USB_PID_LPU237);
 		if( devs == NULL ){
 			dw_result = 0;
+			LOG_INFO("hid_enumerate");
 			continue;//no device
 		}
 
@@ -357,19 +419,22 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_w(wchar_t 
 			n_dev++;
 			//
 			//wcslen(cur_dev->path)
-			n_size_byte = (strlen(cur_dev->path)+1) * sizeof(wchar_t);
+			n_size_byte += (strlen(cur_dev->path)+1) * sizeof(wchar_t);
 
 			//convert char* -> wchar_t*
 			memset( sw_path, 0, sizeof(sw_path) );
 			n_size = mbstowcs(sw_path, cur_dev->path, sizeof(sw_path)/sizeof(wchar_t));
 			if( n_size < 0 ){
+				LOG_ERROR("mbstowcs");
 				break;//exit while
 			}
 			else{
-				wcscpy( &ss_dev_path[n_offset], sw_path );
-				n_offset += n_size;
-				ss_dev_path[n_offset] = 0;//make zero string.
-				n_offset++;
+				if( ss_dev_path ){
+					wcscpy( &ss_dev_path[n_offset], sw_path );
+					n_offset += n_size;
+					ss_dev_path[n_offset] = 0;//make zero string.
+					n_offset++;
+				}
 
 				cur_dev = cur_dev->next;
 			}
@@ -389,7 +454,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_w(wchar_t 
 		}
 	}while(0);
 
-	inner_log::get_instance().log_info("-LPU237_get_list_w");
+	LOG_INFO("-LPU237_get_list_w : %s",_get_return_string(dw_result).c_str() );
 
 	return dw_result;
 }
@@ -401,16 +466,18 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_a(char *ss
 	unsigned long n_dev = 0;
 	unsigned long n_size_byte = 0;
 	size_t n_offset = 0;
-	size_t n_size = 0;
 
-	inner_log::get_instance().log_info("+LPU237_get_list_a");
+	LOG_INFO("+LPU237_get_list_a : 0x%X",ss_dev_path);
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
+		}
 		//
 		devs = hid_enumerate(_USB_VID_LPU237, _USB_PID_LPU237);
 		if( devs == NULL ){
 			dw_result = 0;
+			LOG_INFO("hid_enumerate");
 			continue;//no device
 		}
 
@@ -434,9 +501,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_a(char *ss
 			cur_dev = cur_dev->next;
 		}//end while
 		hid_free_enumeration(devs);
-		if( n_size < 0 ){
-			continue;//error exit
-		}
+
 		// success
 		if( ss_dev_path != NULL )
 			dw_result = n_dev;
@@ -448,7 +513,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_a(char *ss
 		}
 	}while(0);
 
-	inner_log::get_instance().log_info("-LPU237_get_list_a");
+	LOG_INFO("-LPU237_get_list_a : %s",_get_return_string(dw_result).c_str() );
 
 	return dw_result;
 }
@@ -460,25 +525,34 @@ LPU237_HANDLE LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_open_w( const wchar
 	char s_path[256] = {0,};
 	hid_device *p_hid = NULL;
 
-	inner_log::get_instance().log_info("+LPU237_open_w");
+	if( s_dev_path )	LOG_INFO("+LPU237_open_w : %s",s_dev_path);
+	else LOG_INFO("+LPU237_open_w : NULL");
 
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
-		if( s_dev_path == NULL )
+		}
+		if( s_dev_path == NULL ){
+			LOG_ERROR("s_dev_path == NULL");
 			continue;
+		}
 		//convert wchar_t -> char
 		n_size = wcstombs (s_path, s_dev_path, sizeof(s_path));
-		if( n_size <= 0)
+		if( n_size <= 0){
+			LOG_ERROR("wcstombs");
 			continue;
+		}
 
 		p_hid = hid_open_path( s_path );
-		if( p_hid == NULL )
+		if( p_hid == NULL ){
+			LOG_INFO("hid_open_path");
 			continue;
+		}
 
 		h_dev = (LPU237_HANDLE)p_hid;
 	}while(0);
-	inner_log::get_instance().log_info("-LPU237_open_w");
+	LOG_INFO("-LPU237_open_w : 0x%X",h_dev );
 
 	return h_dev;
 }
@@ -489,21 +563,29 @@ LPU237_HANDLE LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_open_a( const char 
 	LPU237_HANDLE h_dev = NULL;
 	hid_device *p_hid = NULL;
 
-	inner_log::get_instance().log_info("+LPU237_open_a");
+	if( s_dev_path )	LOG_INFO("+LPU237_open_a : %s",s_dev_path);
+	else LOG_INFO("+LPU237_open_a : NULL");
+
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
-		if( s_dev_path == NULL )
+		}
+		if( s_dev_path == NULL ){
+			LOG_ERROR("s_dev_path == NULL");
 			continue;
+		}
 		//
 		p_hid = hid_open_path( s_dev_path );
-		if( p_hid == NULL )
+		if( p_hid == NULL ){
+			LOG_INFO("hid_open_path");
 			continue;
+		}
 
 		h_dev = (LPU237_HANDLE)p_hid;
 	}while(0);
 
-	inner_log::get_instance().log_info("-LPU237_open_a");
+	LOG_INFO("-LPU237_open_a : 0x%X",h_dev);
 
 	return h_dev;
 }
@@ -512,13 +594,17 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_close( LPU237_HANDL
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
-	inner_log::get_instance().log_info("+LPU237_close");
+	LOG_INFO("+LPU237_close : 0x%x",h_dev);
 
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
-		if( h_dev == NULL )
+		}
+		if( h_dev == NULL ){
+			LOG_ERROR("h_dev == NULL");
 			continue;
+		}
 		//
 		hid_close( (hid_device*)h_dev );
 
@@ -526,7 +612,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_close( LPU237_HANDL
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
 	}while(0);
 
-	inner_log::get_instance().log_info("-LPU237_close");
+	LOG_INFO("-LPU237_close : %s",_get_return_string(dw_result).c_str() );
 
 	return dw_result;
 }
@@ -535,13 +621,17 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HAND
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
-	inner_log::get_instance().log_info("+LPU237_get_id");
+	LOG_INFO("+LPU237_get_id : 0x%x, 0x%x", h_dev,s_id );
 
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
-		if( h_dev == NULL  )
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
 			continue;
+		}
 		//
 		if( s_id == NULL ){
 			dw_result = _SIZE_UID;
@@ -560,14 +650,25 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HAND
 				, NULL
 				, NULL
 				);
-		if( result_index < 0 )
+		if( result_index < 0 ){
+			LOG_ERROR("result_index < 0");
 			continue;
+		}
 
 		type_pmsr_host_packet p_packet = (type_pmsr_host_packet)s_rx;
-		if( p_packet->c_rsp != 'R' )
+
+		LOG_DEBUG("p_packet->c_rsp = 0x%X",p_packet->c_rsp);
+		LOG_DEBUG("p_packet->c_sub = 0x%X",p_packet->c_sub);
+		LOG_DEBUG("p_packet->c_len = 0x%X",p_packet->c_len);
+
+		if( p_packet->c_rsp != 'R' ){
+			LOG_ERROR("p_packet->c_rsp != R");
 			continue;
-		if( p_packet->c_sub != msr_rsp_good )
+		}
+		if( p_packet->c_sub != msr_rsp_good ){
+			LOG_ERROR("p_packet->c_sub != msr_rsp_good");
 			continue;
+		}
 		if( p_packet->c_len > 0 && s_id != NULL ){
 			memcpy( s_id,p_packet->s_data, p_packet->c_len );
 		}
@@ -576,7 +677,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HAND
 		dw_result = _SIZE_UID;
 	}while(0);
 
-	inner_log::get_instance().log_info("-LPU237_get_id");
+	LOG_INFO("-LPU237_get_id : %s",_get_return_string(dw_result).c_str() );
 
 	return dw_result;
 }
@@ -585,18 +686,22 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_enable( LPU237_HAND
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
-	inner_log::get_instance().log_info("+LPU237_enable");
+	LOG_INFO("+LPU237_enable : 0x%x", h_dev);
 
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
-		if( h_dev == NULL  )
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
 			continue;
+		}
 		//
 		dw_result = _enter_opos( h_dev );
 	}while(0);
 
-	inner_log::get_instance().log_info("-LPU237_enable");
+	LOG_INFO("-LPU237_enable : %s",_get_return_string(dw_result).c_str() );
 
 	return dw_result;
 }
@@ -605,18 +710,22 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_disable( LPU237_HAN
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
-	inner_log::get_instance().log_info("+LPU237_disable");
+	LOG_INFO("+LPU237_disable : 0x%x", h_dev);
 
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
-		if( h_dev == NULL  )
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
 			continue;
+		}
 		//
 		dw_result = _leave_opos( h_dev );
 	}while(0);
 
-	inner_log::get_instance().log_info("-LPU237_disable");
+	LOG_INFO("-LPU237_disable : %s",_get_return_string(dw_result).c_str() );
 
 	return dw_result;
 }
@@ -625,13 +734,17 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait_swipe( 
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
-	inner_log::get_instance().log_info("+LPU237_cancel_wait_swipe");
+	LOG_INFO("+LPU237_cancel_wait_swipe : 0x%x", h_dev);
 
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
-		if( h_dev == NULL  )
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
 			continue;
+		}
 		//
 		inner_worker::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
@@ -643,6 +756,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait_swipe( 
 				);
 		//
 		if( n_result_key < 0 ){
+			LOG_ERROR("result_index < 0");
 			continue;//error
 		}
 
@@ -653,17 +767,19 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait_swipe( 
 		inner_worker::type_job_result result;
 		if( !inner_worker::get_instance().get_result_and_delete( n_result_key, result ) ){
 			n_result_key = -1;//error
+			LOG_ERROR("get_result_and_delete()");
 			continue;
 		}
 		if( result.result_fun != inner_worker::result_fun_success ){
 			n_result_key = -1;//error
+			LOG_ERROR("result_fun(%d) != result_fun_success",(int)result.result_fun );
 			continue;
 		}
 		// success
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
 	}while(0);
 
-	inner_log::get_instance().log_info("-LPU237_cancel_wait_swipe");
+	LOG_INFO("-LPU237_cancel_wait_swipe : %s",_get_return_string(dw_result).c_str() );
 
 	return dw_result;
 }
@@ -672,13 +788,17 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_wai
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
-	inner_log::get_instance().log_info("+LPU237_wait_swipe_with_waits");
+	LOG_INFO("+LPU237_wait_swipe_with_waits : 0x%x", h_dev);
 
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
-		if( h_dev == NULL  )
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
 			continue;
+		}
 		//
 		inner_worker::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
@@ -690,6 +810,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_wai
 				);
 		//
 		if( n_result_key < 0 ){
+			LOG_ERROR("result_index < 0");
 			continue;//error
 		}
 
@@ -697,12 +818,15 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_wai
 		if( p_event ){
 			p_event->wait(-1);
 		}
+		else{
+			LOG_ERROR("get_result_event()");
+		}
 
 		// success
 		dw_result = (unsigned long)n_result_key;
 	}while(0);
 
-	inner_log::get_instance().log_info("-LPU237_wait_swipe_with_waits");
+	LOG_INFO("-LPU237_wait_swipe_with_waits : %s",_get_return_string(dw_result).c_str() );
 
 	return dw_result;
 }
@@ -711,13 +835,17 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_cal
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
-	inner_log::get_instance().log_info("+LPU237_wait_swipe_with_callback");
+	LOG_INFO("+LPU237_wait_swipe_with_callback : 0x%x, 0x%x, 0x%x,", h_dev,p_fun,p_parameter );
 
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
-		if( h_dev == NULL  )
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
 			continue;
+		}
 		//
 		// no wait part.
 		inner_worker::type_buffer v_tx(0);
@@ -728,14 +856,16 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_cal
 				, true
 				);
 		//
-		if( n_result_key < 0 )
+		if( n_result_key < 0 ){
+			LOG_ERROR("result_index < 0");
 			continue;//error
+		}
 
 		// success
 		dw_result = (unsigned long)n_result_key;
 	}while(0);
 
-	inner_log::get_instance().log_info("-LPU237_wait_swipe_with_callback");
+	LOG_INFO("-LPU237_wait_swipe_with_callback : %s",_get_return_string(dw_result).c_str() );
 
 	return dw_result;
 }
@@ -750,18 +880,24 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 	int n_offset = 3;
 	int i = 0;
 
-	inner_log::get_instance().log_info("+LPU237_get_data");
+	LOG_INFO("+LPU237_get_data : %d, %u, 0x%x", (int)dw_buffer_index, dw_iso_track, s_track_data);
 
 	do{
-		if( !inner_worker::get_instance().is_setup_ok() )
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
 			continue;
-		if( dw_iso_track == 0 || dw_iso_track > 3 )
+		}
+		if( dw_iso_track == 0 || dw_iso_track > 3 ){
+			LOG_ERROR("dw_iso_track == 0 || dw_iso_track > 3");
 			continue;
+		}
 		//
 		if( n_new_result_index != n_cur_result_index ){
 			// get new data.
-			if( !inner_worker::get_instance().get_result_and_delete(n_new_result_index,result ) )
+			if( !inner_worker::get_instance().get_result_and_delete(n_new_result_index,result ) ){
+				LOG_ERROR("get_result_and_delete()");
 				continue;
+			}
 			//
 			n_cur_result_index = n_new_result_index;
 			//
@@ -775,16 +911,19 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 		case inner_worker::result_fun_success:
 			dw_result = 0;
 			if( result.ptr_rx == nullptr ){
+				LOG_ERROR("result.ptr_rx == nullptr");
 				dw_result = LPU237_DLL_RESULT_ERROR_MSR;
 				continue;
 			}
 			if( result.ptr_rx->size()<220){
+				LOG_ERROR("result.ptr_rx->size()<220");
 				dw_result = LPU237_DLL_RESULT_ERROR_MSR;
 				continue;
 			}
 
 			ps_data = &((*result.ptr_rx)[0]);
 			if( ((signed char)ps_data[dw_iso_track-1] )<0 ){
+				LOG_ERROR("track %u : size = %d",dw_iso_track,(int)ps_data[dw_iso_track-1]);
 				dw_result = LPU237_DLL_RESULT_ERROR_MSR;
 				continue;
 			}
@@ -809,14 +948,19 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 			}
 			break;
 		case inner_worker::result_fun_ing:
+			LOG_ERROR("result_fun == result_fun_ing");
+			break;
 		case inner_worker::result_fun_error:
+			LOG_ERROR("result_fun == result_fun_error");
+			break;
 		default:
+			LOG_ERROR("result_fun == unknown");
 			break;
 		}//end switch
 
 	}while(0);
 
-	inner_log::get_instance().log_info("-LPU237_get_data");
+	LOG_INFO("-LPU237_get_data : %s",_get_return_string(dw_result).c_str());
 
 	return dw_result;
 }

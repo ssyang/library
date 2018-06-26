@@ -456,7 +456,7 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 			//printf("Kernel Version: %d\n", kernel_version);
 		}
 		else {
-			printf("Couldn't sscanf() version string %s\n", name.release);
+			//printf("Couldn't sscanf() version string %s\n", name.release);
 		}
 	}
 
@@ -499,7 +499,11 @@ hid_device * HID_API_EXPORT hid_open_path(const char *path)
 	}
 }
 
-
+//On success, these system calls return zero. On error, -1 is returned, and errno is set appropriately.
+int  HID_API_EXPORT HID_API_CALL hid_flush(hid_device *device)
+{
+	return fsync(device->device_handle);
+}
 int HID_API_EXPORT hid_write(hid_device *dev, const unsigned char *data, size_t length)
 {
 	int bytes_written;

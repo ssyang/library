@@ -37,6 +37,7 @@ public:
 
 	typedef	type_result_fun(*type_fun_tx)(void *h_dev, const type_ptr_buffer & ptr_tx );
 	typedef	type_result_fun(*type_fun_rx)(void *h_dev, type_ptr_buffer & ptr_rx );
+	typedef	type_result_fun(*type_fun_flush)(void *h_dev );
 
 	typedef struct tag_job_item{
 		void *h_dev;
@@ -77,7 +78,7 @@ private:
 	};
 public:
 	~inner_worker();
-	static inner_worker & get_instance(type_fun_tx fun_tx=NULL, type_fun_rx fun_rx=NULL);
+	static inner_worker & get_instance(type_fun_tx fun_tx=NULL, type_fun_rx fun_rx=NULL, type_fun_flush fun_flush=NULL);
 
 	bool is_setup_ok();
 	bool start_worker();
@@ -103,7 +104,7 @@ public:
 private:
 	static void* _worker(void *p_data);
 private:
-	inner_worker(type_fun_tx fun_tx, type_fun_rx fun_rx);
+	inner_worker(type_fun_tx fun_tx, type_fun_rx fun_rx, type_fun_flush fun_flush);
 
 	bool _stop();
 
@@ -123,9 +124,12 @@ private:
 			, bool b_save_tx = false );
 
 	void _notify_result(
-			int n_index,
+			const type_job_item & item,
 			type_result_fun result_fun,
 			const type_buffer & v_rx
+			);
+	void _notify_result(
+			type_result_fun result_fun
 			);
 
 private:
@@ -145,6 +149,7 @@ private:
 
 	type_fun_tx m_fun_tx;
 	type_fun_rx m_fun_rx;
+	type_fun_flush m_fun_flush;
 
 	type_job_process m_cur_job;	//current processing job data
 

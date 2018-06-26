@@ -12,6 +12,15 @@
 
 #include <string>
 #include <stdarg.h>
+#include <mutex>
+
+
+#define LOG_TRACE(...)	inner_log::get_instance().log_trace( __FILE__,__func__,__LINE__,__VA_ARGS__)
+#define LOG_DEBUG(...)	inner_log::get_instance().log_debug( __FILE__,__func__,__LINE__,__VA_ARGS__)
+#define LOG_INFO(...)	inner_log::get_instance().log_info( __FILE__,__func__,__LINE__,__VA_ARGS__)
+#define LOG_WARNING(...)	inner_log::get_instance().log_warning( __FILE__,__func__,__LINE__,__VA_ARGS__)
+#define LOG_ERROR(...)	inner_log::get_instance().log_error( __FILE__,__func__,__LINE__,__VA_ARGS__)
+#define LOG_FATAL(...)	inner_log::get_instance().log_fatal( __FILE__,__func__,__LINE__,__VA_ARGS__)
 
 using namespace std;
 
@@ -45,57 +54,63 @@ public:
 	}
 
 	//logging function
-	void log_trace( const char *fmt, ...)
+	void log_trace( const char *src_file, const char *func, int line_no,const char *fmt, ...)
 	{
 		if( get_level()>=LOG_LVL_TRACE ){
+			lock_guard<mutex> _lock (m_mutex);
 			va_list ap;
 			va_start(ap, fmt);
-			LOGlogging('T',__FILE__,__func__,__LINE__,fmt, ap);
+			LOGlogging('T',src_file,func,line_no,fmt, ap);
 			va_end(ap);
 		}
 	}
-	void log_debug( const char *fmt, ...)
+	void log_debug( const char *src_file, const char *func, int line_no,const char *fmt, ...)
 	{
 		if( get_level()>=LOG_LVL_DEBUG ){
+			lock_guard<mutex> _lock (m_mutex);
 			va_list ap;
 			va_start(ap, fmt);
-			LOGlogging('D',__FILE__,__func__,__LINE__,fmt, ap);
+			LOGlogging('D',src_file,func,line_no,fmt, ap);
 			va_end(ap);
 		}
 	}
-	void log_info( const char *fmt, ...)
+	void log_info( const char *src_file, const char *func, int line_no, const char *fmt, ...)
 	{
 		if( get_level()>=LOG_LVL_INFO ){
+			lock_guard<mutex> _lock (m_mutex);
 			va_list ap;
 			va_start(ap, fmt);
-			LOGlogging('I',__FILE__,__func__,__LINE__,fmt, ap);
+			LOGlogging('I',src_file,func,line_no,fmt, ap);
 			va_end(ap);
 		}
 	}
-	void log_warning( const char *fmt, ...)
+	void log_warning( const char *src_file, const char *func, int line_no,const char *fmt, ...)
 	{
 		if( get_level()>=LOG_LVL_WARNING ){
+			lock_guard<mutex> _lock (m_mutex);
 			va_list ap;
 			va_start(ap, fmt);
-			LOGlogging('W',__FILE__,__func__,__LINE__,fmt, ap);
+			LOGlogging('W',src_file,func,line_no,fmt, ap);
 			va_end(ap);
 		}
 	}
-	void log_error( const char *fmt, ...)
+	void log_error( const char *src_file, const char *func, int line_no,const char *fmt, ...)
 	{
 		if( get_level()>=LOG_LVL_ERROR ){
+			lock_guard<mutex> _lock (m_mutex);
 			va_list ap;
 			va_start(ap, fmt);
-			LOGlogging('E',__FILE__,__func__,__LINE__,fmt, ap);
+			LOGlogging('E',src_file,func,line_no,fmt, ap);
 			va_end(ap);
 		}
 	}
-	void log_fatal( const char *fmt, ...)
+	void log_fatal( const char *src_file, const char *func, int line_no,const char *fmt, ...)
 	{
 		if( get_level()>=LOG_LVL_FATAL ){
+			lock_guard<mutex> _lock (m_mutex);
 			va_list ap;
 			va_start(ap, fmt);
-			LOGlogging('F',__FILE__,__func__,__LINE__,fmt, ap);
+			LOGlogging('F',src_file,func,line_no,fmt, ap);
 			va_end(ap);
 		}
 	}
@@ -117,6 +132,7 @@ private:
 	string m_s_dir;
 	string m_s_prefix;
 	bool m_b_setup_ok;
+	mutex m_mutex;
 
 private://don't call these methods
 	inner_log();

@@ -12,9 +12,12 @@
 
 using namespace std;
 
-inner_worker & inner_worker::get_instance(type_fun_tx fun_tx/*=NULL*/, type_fun_rx fun_rx/*=NULL*/)
+inner_worker & inner_worker::get_instance(
+		type_fun_tx fun_tx/*=NULL*/
+		, type_fun_rx fun_rx/*=NULL*/
+		,  type_fun_flush fun_flush /*=NULL*/)
 {
-	static inner_worker obj(fun_tx,fun_rx);//Don't use "-nostartfiles" linker option
+	static inner_worker obj(fun_tx,fun_rx,fun_flush);//Don't use "-nostartfiles" linker option
 
 	return obj;
 }
@@ -24,13 +27,14 @@ bool inner_worker::is_setup_ok()
 	return m_b_setup;
 }
 
-inner_worker::inner_worker(type_fun_tx fun_tx, type_fun_rx fun_rx) :
+inner_worker::inner_worker(type_fun_tx fun_tx, type_fun_rx fun_rx, type_fun_flush fun_flush) :
  m_b_setup(false)
 , m_n_id(-1)
 , m_n_cur_result_index(1)
 , m_evet_kill(true,false)
 , m_fun_tx(fun_tx)
 , m_fun_rx(fun_rx)
+, m_fun_flush(fun_flush)
 {
 	do{
 		if( m_evet_kill.get_handle() == NULL )
@@ -203,7 +207,7 @@ bool inner_worker::_job_process()
 			m_cur_job.b_process = false;
 			if( m_cur_job.ptr_rx == nullptr )
 				m_cur_job.ptr_rx = type_ptr_buffer( new type_buffer(0));
-			_notify_result( m_cur_job.n_index, result_fun_cancel, *m_cur_job.ptr_rx );
+			_notify_result( result_fun_cancel );
 		}
 		//
 		type_job_item item;
@@ -215,7 +219,7 @@ bool inner_worker::_job_process()
 				_save_job_item( item );
 			else{
 				//cancel case
-				_notify_result( item.n_index, result_fun_success, type_buffer(0) );
+				_notify_result( item, result_fun_success, type_buffer(0) );
 			}
 			continue;
 		}
@@ -224,7 +228,7 @@ bool inner_worker::_job_process()
 				_save_job_item( item );
 			else{
 				//cancel case
-				_notify_result( item.n_index, result_fun_success, type_buffer(0) );
+				_notify_result( item, result_fun_success, type_buffer(0) );
 			}
 			continue;
 		}
@@ -233,7 +237,7 @@ bool inner_worker::_job_process()
 				_save_job_item( item );
 			else{
 				//cancel case
-				_notify_result( item.n_index, result_fun_success, type_buffer(0) );
+				_notify_result( item, result_fun_success, type_buffer(0) );
 			}
 			continue;
 		}
@@ -245,13 +249,13 @@ bool inner_worker::_job_process()
 			type_result_fun result_fun = m_fun_tx( item.h_dev, item.ptr_tx );
 			switch( result_fun ){
 			case result_fun_success:
-				if( item.b_rx == 1 ){
+				if( item.b_rx ){
 					_save_job_item( item );
 					break;
 				}
 			case result_fun_error:
 			case result_fun_cancel:
-				_notify_result( item.n_index, result_fun, type_buffer(0) );
+				_notify_result( item, result_fun, type_buffer(0) );
 				break;
 			case result_fun_ing:
 				b_tx_continue = true;
@@ -288,7 +292,7 @@ bool inner_worker::_idle_process()
 		case result_fun_success:
 			if( m_cur_job.ptr_rx == nullptr )
 				m_cur_job.ptr_rx = type_ptr_buffer( new type_buffer(0) );
-			_notify_result( m_cur_job.n_index, result_fun, *m_cur_job.ptr_rx  );
+			_notify_result( result_fun  );
 			break;
 		case result_fun_ing:
 			m_cur_job.b_process = true;	//continue idle process.
@@ -470,7 +474,6 @@ void inner_worker::_save_job_item(
 		)
 {
 	do{
-
 		m_cur_job.b_process = b_enable_process;
 		m_cur_job.h_dev = item.h_dev;
 		m_cur_job.n_index = item.n_index;
@@ -478,6 +481,13 @@ void inner_worker::_save_job_item(
 		m_cur_job.ptr_tx = nullptr;
 		m_cur_job.fun_wait = item.fun_wait;
 		m_cur_job.p_parameter_for_fun_wait = item.p_parameter_for_fun_wait;
+
+		//
+		if( item.h_dev ){
+			//flush file.
+			if( m_fun_flush )
+				m_fun_flush( item.h_dev );
+		}
 
 		if( !b_save_tx )
 			continue;
@@ -491,15 +501,31 @@ void inner_worker::_save_job_item(
 }
 
 void inner_worker::_notify_result(
-		int n_index,
+		const type_job_item & item,
 		type_result_fun result_fun,
 		const type_buffer & v_rx
 		)
 {
 	do{
-		if( !_set_result( n_index, result_fun, v_rx ) )
+		if( !_set_result( item.n_index, result_fun, v_rx ) )
 			continue;
-		inner_event *p_evet = get_result_event( n_index );
+		inner_event *p_evet = get_result_event( item.n_index );
+		if( p_evet == NULL )
+			continue;
+		p_evet->set();
+
+		//call callback
+		if( item.fun_wait )
+			item.fun_wait( item.p_parameter_for_fun_wait );
+	}while(0);
+}
+
+void inner_worker::_notify_result( type_result_fun result_fun )
+{
+	do{
+		if( !_set_result( m_cur_job.n_index, result_fun, *(m_cur_job.ptr_rx) ) )
+			continue;
+		inner_event *p_evet = get_result_event( m_cur_job.n_index );
 		if( p_evet == NULL )
 			continue;
 		p_evet->set();
@@ -509,5 +535,4 @@ void inner_worker::_notify_result(
 			m_cur_job.fun_wait( m_cur_job.p_parameter_for_fun_wait );
 	}while(0);
 }
-
 

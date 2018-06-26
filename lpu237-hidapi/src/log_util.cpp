@@ -15,10 +15,10 @@ static char log_folder[1024] = ".";
 static FILE *fp_log_file;
 static int  log_level = LOG_LVL_INFO;
 
-static int mkdir_p(const char *dir, const mode_t mode);
+static int _mkdir_p(const char *dir, const mode_t mode);
 
 /* recursive mkdir */
-int mkdir_p(const char *dir, const mode_t mode)
+int _mkdir_p(const char *dir, const mode_t mode)
 {
     char tmp[1024];
     char *p = NULL;
@@ -161,14 +161,22 @@ static int LOGcreateFile(struct tm *tm1, const char *src_file)
             *ext = 0x00;
         }
     }
-    snprintf(filename, 1024, "%s/%s-%04d%02d%02d.log", log_folder, log_file_prefix, 1900 + tm1->tm_year, tm1->tm_mon + 1, tm1->tm_mday);
+    snprintf(filename, 1024, "%s/%s-%04d%02d%02d%02d%02d%02d.log",
+    		log_folder
+			, log_file_prefix
+			, 1900 + tm1->tm_year
+			, tm1->tm_mon + 1
+			, tm1->tm_mday
+			, tm1->tm_hour
+			, tm1->tm_min
+			, tm1->tm_sec);
 
     if(fp_log_file != NULL) {
         fclose(fp_log_file);
         fp_log_file = NULL;
     }
 
-    if( mkdir_p(log_folder,0777) != 0 ){
+    if( _mkdir_p(log_folder,0777) != 0 ){
     	return -1;
     }
     if((fp_log_file = fopen(filename, "a")) == NULL) {
@@ -183,9 +191,11 @@ static int LOGcreateFile(struct tm *tm1, const char *src_file)
 * log_type, 로그생성일시분초microseconds, process id, 소스파일, 함수명, 라인수, 오류 내용
 * 의 format으로 로그를 생성함.
 */
-int LOGlogging(char log_type, const char *src_file, const char *func, int line_no, const char *fmt, ...)
+int LOGlogging(char log_type,
+		const char *src_file, const char *func, int line_no,
+		const char *fmt,va_list arg)
 {
-    va_list ap;
+    //va_list ap;
     int  sz = 0;
     struct timeval tv;
     struct tm *tm1;
@@ -195,7 +205,7 @@ int LOGlogging(char log_type, const char *src_file, const char *func, int line_n
 
     gettimeofday(&tv, NULL);
     tm1 = localtime(&tv.tv_sec);
-    va_start(ap, fmt);
+    //va_start(ap, fmt);
 
     if(pid == -1) {
         pid = getpid();
@@ -214,9 +224,9 @@ int LOGlogging(char log_type, const char *src_file, const char *func, int line_n
                                 tm1->tm_hour, tm1->tm_min, tm1->tm_sec, tv.tv_usec, pid);
     snprintf(src_info, 128, "%s:%s(%d)", src_file, func, line_no);
     sz += fprintf(fp_log_file, ":%-50.50s: ", src_info);
-    sz += vfprintf(fp_log_file, fmt, ap);
+    sz += vfprintf(fp_log_file, fmt, arg);
     sz += fprintf(fp_log_file, "\n");
-    va_end(ap);
+    //va_end(ap);
 
     return sz;
 }

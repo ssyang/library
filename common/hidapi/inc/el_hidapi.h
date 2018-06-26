@@ -78,6 +78,7 @@ extern "C" {
 		typedef hid_device *(*type_hid_open_ex)(unsigned short vendor_id, unsigned short product_id, int interface_number, wchar_t *serial_number);
 		typedef hid_device *(*type_hid_open)(unsigned short vendor_id, unsigned short product_id, wchar_t *serial_number);
 		typedef hid_device *(*type_hid_open_path)(const char *path);
+		typedef int (*type_hid_flush)(hid_device *device);
 		typedef int (*type_hid_write)(hid_device *device, const unsigned char *data, size_t length);
 		typedef int (*type_hid_read_timeout)(hid_device *dev, unsigned char *data, size_t length, int milliseconds);
 		typedef int (*type_hid_read)(hid_device *device, unsigned char *data, size_t length);
