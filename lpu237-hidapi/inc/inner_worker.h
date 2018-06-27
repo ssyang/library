@@ -43,6 +43,7 @@ public:
 		void *h_dev;
 		type_ptr_buffer ptr_tx;
 		bool b_rx;	//need response.
+		bool b_pump_rx;// when idle pumping rx.
 
 		LPU237_type_callback fun_wait;	//callback for wait thread
 		void *p_parameter_for_fun_wait;
@@ -90,7 +91,8 @@ public:
 			type_buffer & v_tx,
 			LPU237_type_callback fun_wait,
 			void *p_parameter_for_fun_wait,
-			bool b_need_rx = true
+			bool b_need_rx = true,
+			bool b_pump_rx = true
 			 );
 
 	// return result map key
@@ -133,6 +135,7 @@ private:
 			);
 
 private:
+	void *m_h_pump;
 	bool m_b_setup;
 	pthread_t m_n_id;	// main worker thread id
 

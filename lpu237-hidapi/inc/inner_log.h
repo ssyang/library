@@ -9,6 +9,8 @@
 #define INC_INNER_LOG_H_
 
 #include "log_util.h"
+#include "INIReader.h"
+#include "inner_util.h"
 
 #include <string>
 #include <stdarg.h>
@@ -45,12 +47,12 @@ public:
 
 	int set_level(int n_level)
 	{
-		return LOGsetLevel( n_level );
+		return LOGsetLevelByIni( n_level );
 	}
 
 	int get_level()
 	{
-		return LOGgetLevel();
+		return LOGgetLevelByIni();
 	}
 
 	//logging function

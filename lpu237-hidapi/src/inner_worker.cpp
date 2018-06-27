@@ -28,7 +28,8 @@ bool inner_worker::is_setup_ok()
 }
 
 inner_worker::inner_worker(type_fun_tx fun_tx, type_fun_rx fun_rx, type_fun_flush fun_flush) :
- m_b_setup(false)
+m_h_pump(NULL)
+,m_b_setup(false)
 , m_n_id(-1)
 , m_n_cur_result_index(1)
 , m_evet_kill(true,false)
@@ -214,6 +215,12 @@ bool inner_worker::_job_process()
 
 		if( !_job_pop( item ) )
 			continue;
+		//
+		if( item.b_pump_rx )
+			m_h_pump = item.h_dev;
+		else
+			m_h_pump = NULL;
+		//
 		if( item.ptr_tx == nullptr ){
 			if( item.b_rx )
 				_save_job_item( item );
@@ -274,14 +281,21 @@ bool inner_worker::_job_process()
 bool inner_worker::_idle_process()
 {
 	bool b_continue_run = true;
+	type_result_fun result_fun = result_fun_success;
+	static type_ptr_buffer ptr_bump(nullptr);
 
 	do{
 		if( m_fun_rx == 0 )
 			continue;
-		if( !m_cur_job.b_process )
+		if( !m_cur_job.b_process ){
+			if( m_h_pump == NULL )
+				continue;
+			//
+			result_fun = m_fun_rx( m_h_pump, ptr_bump );
 			continue;
+		}
 		//
-		type_result_fun result_fun = m_fun_rx( m_cur_job.h_dev, m_cur_job.ptr_rx );
+		result_fun = m_fun_rx( m_cur_job.h_dev, m_cur_job.ptr_rx );
 
 		m_cur_job.b_process = false;//stop idle process
 
@@ -376,7 +390,8 @@ int inner_worker::push_job(
 		type_buffer & v_tx,
 		LPU237_type_callback fun_wait,
 		void *p_parameter_for_fun_wait,
-		bool b_need_rx /*= true*/
+		bool b_need_rx, /*= true*/
+		bool b_pump_rx /*= true */
 		)
 {
 	int n_index = -1;
@@ -386,6 +401,7 @@ int inner_worker::push_job(
 				h_dev,
 				type_ptr_buffer( new type_buffer(v_tx) ),
 				b_need_rx,
+				b_pump_rx,
 
 				fun_wait,
 				p_parameter_for_fun_wait,

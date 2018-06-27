@@ -6,9 +6,14 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include "log_util.h"
+#include "inner_log.h"
 
 #include <sys/stat.h>
 #include <sys/types.h>
+
+#include <string>
+
+using namespace std;
 
 static char log_file_prefix[64];
 static char log_folder[1024] = ".";
@@ -78,6 +83,14 @@ int LOGsetLevel(int log_lvl)
 
     return tmp;
 }
+int LOGsetLevelByIni(int log_lvl)
+{
+    int tmp = LOGgetLevelByIni();
+
+    log_level = log_lvl;
+
+    return tmp;
+}
 
 /*
 * log level을 최초로 요청할 때에는 환경변수의 설정을 읽습니다.
@@ -111,7 +124,58 @@ int LOGgetLevel(void)
     }
     return log_level;
 }
+int LOGgetLevelByIni(void)
+{
+    static bool b_first = true;
 
+    do{
+    	if( !b_first )
+    		continue;
+    	//
+    	b_first = false;
+
+		string s_full_path = inner_util::get_current_module_fullpath();
+		string s_new_path = inner_util::get_changed_fullpath( s_full_path, string("liblpu237-hidapi.ini") );
+
+		//default disable log
+		log_level = LOG_LVL_DISABLE;
+
+		if( s_new_path.empty() )
+			continue;
+		//
+		INIReader reader(s_new_path);
+
+		if( reader.ParseError() < 0 )
+			continue;
+
+		long n_log_enable = reader.GetInteger("LogSetting","logenable", 0 );
+		if( n_log_enable != 1 )
+			continue;
+		long n_log_level = reader.GetInteger("LogSetting", "loglevel", 0 );
+		switch( n_log_level ){
+		case 1:
+			log_level = LOG_LVL_ERROR;
+			break;
+		case 2:
+			log_level = LOG_LVL_WARNING;
+			break;
+		case 3:
+			log_level = LOG_LVL_INFO;
+			break;
+		case 4:
+			log_level = LOG_LVL_DEBUG;
+			break;
+		case 5:
+			log_level = LOG_LVL_TRACE;
+			break;
+		default:
+			log_level = LOG_LVL_FATAL;
+			break;
+		}//end switch
+    }while(0);
+
+    return log_level;
+}
 /*
 * Log file을 생성할 위치와 로그파일의 prefix를 설정함
 * LOGset_log_info("/tmp", "mypgm");으로 설정하면
@@ -219,11 +283,12 @@ int LOGlogging(char log_type,
     }
 
     sz += fprintf(fp_log_file, "(%c) ", log_type);
-    sz += fprintf(fp_log_file, "%04d%02d%02d:%02d%02d%02d%06ld:%05d",
+    sz += fprintf(fp_log_file, "%04d%02d%02d:%02d%02d%02d:%05d",
                                 1900 + tm1->tm_year, tm1->tm_mon + 1, tm1->tm_mday,
-                                tm1->tm_hour, tm1->tm_min, tm1->tm_sec, tv.tv_usec, pid);
+                                tm1->tm_hour, tm1->tm_min, tm1->tm_sec,pid);
     snprintf(src_info, 128, "%s:%s(%d)", src_file, func, line_no);
-    sz += fprintf(fp_log_file, ":%-50.50s: ", src_info);
+    //sz += fprintf(fp_log_file, ":%-50.50s: ", src_info);
+    sz += fprintf(fp_log_file, ":%s: ", src_info);
     sz += vfprintf(fp_log_file, fmt, arg);
     sz += fprintf(fp_log_file, "\n");
     //va_end(ap);

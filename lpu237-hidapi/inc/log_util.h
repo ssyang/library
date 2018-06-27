@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 
+#define LOG_LVL_DISABLE	-1	//disable log
 #define LOG_LVL_TRACE	50
 #define LOG_LVL_DEBUG	40
 #define LOG_LVL_INFO		30
@@ -32,11 +33,13 @@ int LOGlogging(char log_type
 * log level을 조정합니다.
 */
 int LOGsetLevel(int log_lvl);
+int LOGsetLevelByIni(int log_lvl);
 
 /*
 * log level을 최초로 요청할 때에는 환경변수의 설정을 읽습니다.
 */
 int LOGgetLevel(void);
+int LOGgetLevelByIni(void);
 
 /*
  * 함수의 실행 시작과 종료룰 로그로 생성하는 마크로 함수

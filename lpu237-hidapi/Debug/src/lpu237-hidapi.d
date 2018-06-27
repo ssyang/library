@@ -4,6 +4,8 @@ src/lpu237-hidapi.o: ../src/lpu237-hidapi.cpp \
  /home/totoro/work/library/lpu237-hidapi/inc/msr_com.h \
  /home/totoro/work/library/lpu237-hidapi/inc/inner_log.h \
  /home/totoro/work/library/lpu237-hidapi/inc/log_util.h \
+ /home/totoro/work/library/lpu237-hidapi/inih/INIReader.h \
+ /home/totoro/work/library/common/inc/inner_util.h \
  /home/totoro/work/library/lpu237-hidapi/inc/inner_worker.h \
  /home/totoro/work/library/lpu237-hidapi/inc/inner_event.h \
  /home/totoro/work/library/lpu237-hidapi/pevents/pevents.h
@@ -17,6 +19,10 @@ src/lpu237-hidapi.o: ../src/lpu237-hidapi.cpp \
 /home/totoro/work/library/lpu237-hidapi/inc/inner_log.h:
 
 /home/totoro/work/library/lpu237-hidapi/inc/log_util.h:
+
+/home/totoro/work/library/lpu237-hidapi/inih/INIReader.h:
+
+/home/totoro/work/library/common/inc/inner_util.h:
 
 /home/totoro/work/library/lpu237-hidapi/inc/inner_worker.h:
 
