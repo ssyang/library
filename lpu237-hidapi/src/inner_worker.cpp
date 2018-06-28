@@ -51,6 +51,7 @@ m_h_pump(NULL)
 		}
 		//
 		m_cur_job.b_process = 0;
+		m_cur_job.mode = mode_msr;
 		m_cur_job.h_dev = 0;
 		m_cur_job.n_index = -1;
 		m_cur_job.ptr_rx = nullptr;
@@ -269,7 +270,7 @@ bool inner_worker::_job_process()
 		do{
 			b_tx_continue = false;
 			//
-			type_result_fun result_fun = m_fun_tx( item.h_dev, item.ptr_tx );
+			type_result_fun result_fun = m_fun_tx( item.h_dev, item.ptr_tx, item.mode );
 			switch( result_fun ){
 			case result_fun_success:
 				if( item.b_rx ){
@@ -308,11 +309,11 @@ bool inner_worker::_idle_process()
 			if( m_h_pump == NULL )
 				continue;
 			//
-			result_fun = m_fun_rx( m_h_pump, ptr_bump );
+			result_fun = m_fun_rx( m_h_pump, ptr_bump, mode_msr_or_key );
 			continue;
 		}
 		//
-		result_fun = m_fun_rx( m_cur_job.h_dev, m_cur_job.ptr_rx );
+		result_fun = m_fun_rx( m_cur_job.h_dev, m_cur_job.ptr_rx, m_cur_job.mode );
 
 		m_cur_job.b_process = false;//stop idle process
 
@@ -338,7 +339,7 @@ bool inner_worker::_idle_process()
 	return b_continue_run;
 }
 
-bool inner_worker::_create_result( int n_index )
+bool inner_worker::_create_result( int n_index,type_mode mode )
 {
 	bool b_result = false;
 
@@ -351,7 +352,13 @@ bool inner_worker::_create_result( int n_index )
 		if( it != end(m_map_result) )
 			continue;//already exist result.
 		//
-		type_job_result result = { result_fun_ing, nullptr, type_ptr_event( new inner_event(true,false) ) };
+		type_job_result result =
+		{
+				result_fun_ing
+				, nullptr
+				, type_ptr_event( new inner_event(true,false) )
+				, mode
+		};
 		m_map_result[n_index] = result;
 		//
 		b_result = true;
@@ -409,7 +416,8 @@ int inner_worker::push_job(
 		LPU237_type_callback fun_wait,
 		void *p_parameter_for_fun_wait,
 		bool b_need_rx, /*= true*/
-		bool b_pump_rx /*= true */
+		bool b_pump_rx, /*= true */
+		type_mode mode /*= mode_msr*/
 		)
 {
 	int n_index = -1;
@@ -420,7 +428,7 @@ int inner_worker::push_job(
 				type_ptr_buffer( new type_buffer(v_tx) ),
 				b_need_rx,
 				b_pump_rx,
-
+				mode,
 				fun_wait,
 				p_parameter_for_fun_wait,
 
@@ -452,7 +460,7 @@ int inner_worker::push_job( type_job_item & item )
 			continue;
 		}
 
-		if( !_create_result( n_index ) ){
+		if( !_create_result( n_index, item.mode ) ){
 			type_job_item item;
 			_job_pop( item );
 			n_index = -1;
@@ -510,6 +518,7 @@ void inner_worker::_save_job_item(
 {
 	do{
 		m_cur_job.b_process = b_enable_process;
+		m_cur_job.mode = item.mode;
 		m_cur_job.h_dev = item.h_dev;
 		m_cur_job.n_index = item.n_index;
 		m_cur_job.ptr_rx = nullptr;

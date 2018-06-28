@@ -26,6 +26,13 @@ class inner_worker{
 
 public:
 	typedef enum{
+		mode_msr = 1,
+		mode_key = 2,
+		mode_msr_or_key = 3,
+		mode_system = 4
+	}type_mode;
+
+	typedef enum{
 		result_fun_success = 0,
 		result_fun_error = 1,
 		result_fun_ing = 2,
@@ -36,8 +43,8 @@ public:
 	typedef	vector<unsigned char>	type_buffer;
 	typedef	shared_ptr<type_buffer>	type_ptr_buffer;
 
-	typedef	type_result_fun(*type_fun_tx)(void *h_dev, const type_ptr_buffer & ptr_tx );
-	typedef	type_result_fun(*type_fun_rx)(void *h_dev, type_ptr_buffer & ptr_rx );
+	typedef	type_result_fun(*type_fun_tx)(void *h_dev, const type_ptr_buffer & ptr_tx, type_mode mode );
+	typedef	type_result_fun(*type_fun_rx)(void *h_dev, type_ptr_buffer & ptr_rx, type_mode mode );
 	typedef	type_result_fun(*type_fun_flush)(void *h_dev );
 
 	typedef struct tag_job_item{
@@ -45,6 +52,7 @@ public:
 		type_ptr_buffer ptr_tx;
 		bool b_rx;	//need response.
 		bool b_pump_rx;// when idle pumping rx.
+		type_mode mode;
 
 		LPU237_type_callback fun_wait;	//callback for wait thread
 		void *p_parameter_for_fun_wait;
@@ -54,6 +62,7 @@ public:
 
 	typedef struct tag_job_process{
 		bool b_process;
+		type_mode mode;
 
 		void *h_dev;
 
@@ -70,6 +79,7 @@ public:
 		type_result_fun result_fun;
 		type_ptr_buffer ptr_rx;
 		type_ptr_event ptr_event_notify;
+		type_mode mode;
 	}type_job_result;
 
 	typedef	map< int,type_job_result >	type_map_result;
@@ -93,7 +103,8 @@ public:
 			LPU237_type_callback fun_wait,
 			void *p_parameter_for_fun_wait,
 			bool b_need_rx = true,
-			bool b_pump_rx = true
+			bool b_pump_rx = true,
+			type_mode mode = mode_msr
 			 );
 
 	// return result map key
@@ -118,7 +129,7 @@ private:
 	bool _job_pop( type_job_item & item );
 	bool _job_is_empty();
 
-	bool _create_result( int n_index );
+	bool _create_result( int n_index, type_mode mode );
 	bool _set_result( int n_index, type_result_fun result_fun, const type_buffer & v_rx );
 	bool _delete_result( int n_index );
 

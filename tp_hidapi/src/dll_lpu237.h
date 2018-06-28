@@ -47,11 +47,19 @@ public:
 
 	unsigned long LPU237_disable( LPU237_HANDLE h_dev );
 
-	unsigned long LPU237_cancel_wait_swipe( LPU237_HANDLE h_dev );
+	unsigned long LPU237_cancel_wait( LPU237_HANDLE h_dev );
 
 	unsigned long LPU237_wait_swipe_with_waits( LPU237_HANDLE h_dev );
 
+	unsigned long LPU237_wait_key_with_waits( LPU237_HANDLE h_dev );
+
+	unsigned long LPU237_wait_swipe_or_key_with_waits( LPU237_HANDLE h_dev );
+
 	unsigned long LPU237_wait_swipe_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
+
+	unsigned long LPU237_wait_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
+
+	unsigned long LPU237_wait_swipe_or_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
 
 	unsigned long LPU237_get_data( unsigned long dw_buffer_index, unsigned long dw_iso_track, unsigned char *s_track_data );
 
@@ -75,9 +83,13 @@ private:
 	type_LPU237_enable m_LPU237_enable;
 	type_LPU237_disable m_LPU237_disable;
 
-	type_LPU237_cancel_wait_swipe m_LPU237_cancel_wait_swipe;
+	type_LPU237_cancel_wait m_LPU237_cancel_wait;
 	type_LPU237_wait_swipe_with_waits m_LPU237_wait_swipe_with_waits;
+	type_LPU237_wait_key_with_waits m_LPU237_wait_key_with_waits;
+	type_LPU237_wait_swipe_or_key_with_waits m_LPU237_wait_swipe_or_key_with_waits;
 	type_LPU237_wait_swipe_with_callback m_LPU237_wait_swipe_with_callback;
+	type_LPU237_wait_key_with_callback m_LPU237_wait_key_with_callback;
+	type_LPU237_wait_swipe_or_key_with_callback m_LPU237_wait_swipe_or_key_with_callback;
 	type_LPU237_get_data m_LPU237_get_data;
 
 private://don't call these methods

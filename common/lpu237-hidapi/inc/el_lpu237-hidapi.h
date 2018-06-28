@@ -57,14 +57,26 @@ typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_enab
 
 typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_disable)( LPU237_HANDLE h_dev );
 
-typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_cancel_wait_swipe)( LPU237_HANDLE h_dev );
+typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_cancel_wait)( LPU237_HANDLE h_dev );
 
 typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_wait_swipe_with_waits)( LPU237_HANDLE h_dev );
 
+typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_wait_key_with_waits)( LPU237_HANDLE h_dev );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_wait_swipe_or_key_with_waits)( LPU237_HANDLE h_dev );
+
 typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_wait_swipe_with_callback)( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_wait_key_with_callback)( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_wait_swipe_or_key_with_callback)( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
 
 #ifdef _WIN32
 typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_wait_swipe_with_message)( LPU237_HANDLE h_dev,HWND h_wnd, UINT n_msg );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_wait_key_with_message)( LPU237_HANDLE h_dev,HWND h_wnd, UINT n_msg );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_wait_swipe_or_key_with_message)( LPU237_HANDLE h_dev,HWND h_wnd, UINT n_msg );
 #endif
 
 typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_get_data)( unsigned long dw_buffer_index, unsigned long dw_iso_track, unsigned char *s_track_data );

@@ -22,10 +22,14 @@
 #define	_USB_PID_LPU237	0x0206
 #define	_USB_INF_LPU237	1
 #define	_SIZE_UID	16
+
+const char gs_ibutton_post[] = "this_is_ibutton_data";
+const int gn_ibutton_data_size = 8;
+
 //
 static inner_worker::type_result_fun _flush_callback( void *h_dev );
-static inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::type_ptr_buffer & ptr_tx );
-static inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_buffer & ptr_rx );
+static inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::type_ptr_buffer & ptr_tx, inner_worker::type_mode mode );
+static inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_buffer & ptr_rx, inner_worker::type_mode mode );
 static int _cmd_tx_rx(
 		hid_device *h_dev
 		, type_msr_cmd cmd
@@ -62,7 +66,7 @@ inner_worker::type_result_fun _flush_callback( void *h_dev )
 	return result_fun;
 }
 
-inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::type_ptr_buffer & ptr_tx )
+inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::type_ptr_buffer & ptr_tx,inner_worker::type_mode mode )
 {
 	inner_worker::type_result_fun result_fun =  inner_worker::result_fun_error;
 	unsigned long n_result = 0;
@@ -135,7 +139,7 @@ inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::typ
 	return result_fun;
 }
 
-inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_buffer & ptr_rx )
+inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_buffer & ptr_rx, inner_worker::type_mode mode )
 {
 	inner_worker::type_result_fun result_fun =  inner_worker::result_fun_error;
 	int n_result = 0;
@@ -171,21 +175,93 @@ inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_
 		}
 		memcpy( &((*ptr_rx)[n_offset]), s_in_report, n_read );
 
-		if( ptr_rx->size() < MSR_SIZE_HOST_PACKET_HEADER ){
-			LOG_INFO("ptr_rx->size() < MSR_SIZE_HOST_PACKET_HEADER");
-			result_fun =  inner_worker::result_fun_ing;
-			continue;
+		if( mode == inner_worker::mode_msr ||
+				mode == inner_worker::mode_key ||
+				mode == inner_worker::mode_msr_or_key
+				){
+			if( n_in_report > ptr_rx->size() ){
+				result_fun =  inner_worker::result_fun_ing;
+				LOG_INFO("ptr_rx->size() : %d",ptr_rx->size());
+				continue;
+			}
 		}
+		else if( mode == inner_worker::mode_system ){
+			if( ptr_rx->size() < MSR_SIZE_HOST_PACKET_HEADER ){
+				LOG_INFO("ptr_rx->size() < MSR_SIZE_HOST_PACKET_HEADER");
+				result_fun =  inner_worker::result_fun_ing;
+				continue;
+			}
 
-		// check packet
-		//type_pmsr_host_packet p_packet = (type_pmsr_host_packet)&((*ptr_rx)[0]);
-		if( n_in_report > ptr_rx->size() ){
-			result_fun =  inner_worker::result_fun_ing;
-			LOG_INFO("ptr_rx->size() : %d",ptr_rx->size());
+			type_pmsr_host_packet p_packet = (type_pmsr_host_packet)&((*ptr_rx)[0]);
+			if( (size_t)(p_packet->c_len+MSR_SIZE_HOST_PACKET_HEADER) > ptr_rx->size() ){
+				result_fun =  inner_worker::result_fun_ing;
+				LOG_INFO("ptr_rx->size() : %d",ptr_rx->size());
+				continue;
+			}
+		}
+		else{
+			//unknown mode
+			LOG_ERROR("unknown mode");
 			continue;
 		}
 
 		result_fun =  inner_worker::result_fun_success;
+	}while(0);
+
+	do{
+		if( result_fun != inner_worker::result_fun_success )
+			continue;
+		if( ptr_rx == nullptr )
+			continue;
+		if( ptr_rx->size() < MSR_SIZE_HOST_PACKET_HEADER )
+			continue;
+		//
+		type_pmsr_host_packet p_packet = (type_pmsr_host_packet)&((*ptr_rx)[0]);
+		unsigned char *ps_data = &((*ptr_rx)[0]);
+		vector<char> v_ibutton_post(sizeof(gs_ibutton_post)+1,0);
+
+		switch( mode ){
+		case inner_worker::mode_system:
+			if(p_packet->c_rsp != 'R' ){
+				ptr_rx->resize(0);//reset buffer
+				LOG_ERROR("mismatching mode");
+				result_fun = inner_worker::result_fun_ing;
+			}
+			break;
+		case inner_worker::mode_key:
+			if(ps_data[0] != 0 || ps_data[1] != 0 || ps_data[2] != 0 ){
+				ptr_rx->resize(0);//reset buffer
+				LOG_ERROR("mismatching mode");
+				result_fun = inner_worker::result_fun_ing;
+				break;
+			}
+
+			memcpy( &v_ibutton_post[0], &ps_data[3+8], sizeof(gs_ibutton_post) );
+			if( strcmp(&v_ibutton_post[0],gs_ibutton_post )!=0 ){
+				ptr_rx->resize(0);//reset buffer
+				LOG_ERROR("mismatching mode");
+				result_fun = inner_worker::result_fun_ing;
+			}
+			break;
+		case inner_worker::mode_msr:
+			if(ps_data[0] != 0 || ps_data[1] != 0 || ps_data[2] != 0 )
+				break;
+			memcpy( &v_ibutton_post[0], &ps_data[3+8], sizeof(gs_ibutton_post) );
+			if( strcmp(&v_ibutton_post[0],gs_ibutton_post )==0 ){
+				ptr_rx->resize(0);//reset buffer
+				LOG_ERROR("mismatching mode");
+				result_fun = inner_worker::result_fun_ing;
+			}
+			break;
+		case inner_worker::mode_msr_or_key:
+			break;
+		default:
+			result_fun = inner_worker::result_fun_error;
+			LOG_ERROR("unknown mode");
+			break;
+		}//end switch
+
+
 	}while(0);
 
 	return result_fun;
@@ -241,6 +317,7 @@ int _cmd_tx_rx(
 					, p_parameter_for_cb
 					, b_need_response
 					, b_pump
+					, inner_worker::mode_system
 					);
 			//
 			if( n_result_key < 0 ){
@@ -283,6 +360,7 @@ int _cmd_tx_rx(
 				, cb
 				, p_parameter_for_cb
 				, b_need_response
+				, inner_worker::mode_msr_or_key
 				);
 		//
 		if( n_result_key < 0 ){
@@ -767,7 +845,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_disable( LPU237_HAN
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait_swipe( LPU237_HANDLE h_dev )
+unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait( LPU237_HANDLE h_dev )
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 
@@ -868,6 +946,104 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_wai
 	return dw_result;
 }
 
+unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_waits( LPU237_HANDLE h_dev )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev);
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+		//
+		inner_worker::type_buffer v_tx(0);
+		int n_result_key = inner_worker::get_instance().push_job(
+				(void*)h_dev
+				, v_tx
+				, NULL
+				, NULL
+				, true
+				, true
+				, inner_worker::mode_key
+				);
+		//
+		if( n_result_key < 0 ){
+			LOG_ERROR("result_index < 0");
+			continue;//error
+		}
+
+		inner_event *p_event = inner_worker::get_instance().get_result_event(n_result_key);
+		if( p_event ){
+			p_event->wait(-1);
+		}
+		else{
+			LOG_ERROR("get_result_event()");
+		}
+
+		// success
+		dw_result = (unsigned long)n_result_key;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+
+	return dw_result;
+}
+
+unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_waits( LPU237_HANDLE h_dev )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev);
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+		//
+		inner_worker::type_buffer v_tx(0);
+		int n_result_key = inner_worker::get_instance().push_job(
+				(void*)h_dev
+				, v_tx
+				, NULL
+				, NULL
+				, true
+				, true
+				, inner_worker::mode_msr_or_key
+				);
+		//
+		if( n_result_key < 0 ){
+			LOG_ERROR("result_index < 0");
+			continue;//error
+		}
+
+		inner_event *p_event = inner_worker::get_instance().get_result_event(n_result_key);
+		if( p_event ){
+			p_event->wait(-1);
+		}
+		else{
+			LOG_ERROR("get_result_event()");
+		}
+
+		// success
+		dw_result = (unsigned long)n_result_key;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+
+	return dw_result;
+}
+
 unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
@@ -907,13 +1083,102 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_cal
 	return dw_result;
 }
 
+unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x, 0x%x, 0x%x,", h_dev,p_fun,p_parameter );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+		//
+		// no wait part.
+		inner_worker::type_buffer v_tx(0);
+		int n_result_key = inner_worker::get_instance().push_job(
+				h_dev
+				, v_tx
+				, p_fun, p_parameter
+				, true
+				, true
+				, inner_worker::mode_key
+				);
+		//
+		if( n_result_key < 0 ){
+			LOG_ERROR("result_index < 0");
+			continue;//error
+		}
+
+		// success
+		dw_result = (unsigned long)n_result_key;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+
+	return dw_result;
+}
+
+unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x, 0x%x, 0x%x,", h_dev,p_fun,p_parameter );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+		//
+		// no wait part.
+		inner_worker::type_buffer v_tx(0);
+		int n_result_key = inner_worker::get_instance().push_job(
+				h_dev
+				, v_tx
+				, p_fun, p_parameter
+				, true
+				, true
+				, inner_worker::mode_msr_or_key
+				);
+		//
+		if( n_result_key < 0 ){
+			LOG_ERROR("result_index < 0");
+			continue;//error
+		}
+
+		// success
+		dw_result = (unsigned long)n_result_key;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+
+	return dw_result;
+}
+
+/*
+ * dw_iso_track = 0 : ibutton data.
+ * dw_iso_track = 1 : MSR ISO1 track data
+ * dw_iso_track = 2 : MSR ISO2 track data
+ * dw_iso_track = 3 : MSR ISO3 track data
+ */
 unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned long dw_buffer_index, unsigned long dw_iso_track, unsigned char *s_track_data )
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
 	static inner_worker::type_job_result result = { inner_worker::result_fun_success, nullptr, nullptr };
 	static int n_cur_result_index = -1;
 	int n_new_result_index = (int)dw_buffer_index;
-	unsigned char *ps_data = 0;
+	unsigned char *ps_data = NULL;
+	type_pmsr_host_packet p_packet = NULL;
 	int n_offset = 3;
 	int i = 0;
 
@@ -924,8 +1189,8 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 			LOG_ERROR("!is_setup_ok()");
 			continue;
 		}
-		if( dw_iso_track == 0 || dw_iso_track > 3 ){
-			LOG_ERROR("dw_iso_track == 0 || dw_iso_track > 3");
+		if( dw_iso_track > 3 ){
+			LOG_ERROR( "dw_iso_track > 3");
 			continue;
 		}
 		//
@@ -937,7 +1202,6 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 			}
 			//
 			n_cur_result_index = n_new_result_index;
-			//
 			result.ptr_event_notify.reset();
 		}
 
@@ -949,16 +1213,46 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 			dw_result = 0;
 			if( result.ptr_rx == nullptr ){
 				LOG_ERROR("result.ptr_rx == nullptr");
-				dw_result = LPU237_DLL_RESULT_ERROR_MSR;
 				continue;
 			}
 			if( result.ptr_rx->size()<220){
 				LOG_ERROR("result.ptr_rx->size()<220");
-				dw_result = LPU237_DLL_RESULT_ERROR_MSR;
 				continue;
 			}
-
+			p_packet = (type_pmsr_host_packet)&((*result.ptr_rx)[0]);
 			ps_data = &((*result.ptr_rx)[0]);
+
+			if( ps_data[0]==0 && ps_data[1]==0 && ps_data[2]==0 ){
+				if( dw_iso_track != 0 ){
+					break;//NO msr data.
+				}
+				vector<char> v_ibutton_post(sizeof(gs_ibutton_post)+1,0);
+				memcpy( &v_ibutton_post[0], &ps_data[3+8], sizeof(gs_ibutton_post) );
+				if( strcmp(&v_ibutton_post[0],gs_ibutton_post )==0 ){
+					//ibutton data.
+					dw_result = (unsigned long)gn_ibutton_data_size;
+					if( s_track_data )
+						memcpy( s_track_data,&ps_data[3],gn_ibutton_data_size );
+				}
+				else{
+					LOG_ERROR("no i-button postfix");
+					dw_result = LPU237_DLL_RESULT_ERROR;
+				}
+				break;
+			}
+
+			if( dw_iso_track == 0 ){
+				LOG_ERROR("no i-button data.");
+				dw_result = LPU237_DLL_RESULT_ERROR;
+				break;
+			}
+			if( p_packet->c_rsp == 'R'){
+				dw_result = LPU237_DLL_RESULT_ERROR;
+				LOG_ERROR("mismatching mode");
+				break;
+			}
+
+			// case MSR data
 			if( ((signed char)ps_data[dw_iso_track-1] )<0 ){
 				LOG_ERROR("track %u : error code = 0x%x",dw_iso_track,ps_data[dw_iso_track-1]);
 				dw_result = LPU237_DLL_RESULT_ERROR_MSR;

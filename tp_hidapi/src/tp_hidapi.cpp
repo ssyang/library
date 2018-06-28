@@ -31,8 +31,14 @@ using namespace std;
 
 volatile unsigned long gn_result_index = -1;
 static void _display_card_data( unsigned long n_result_index );
-static void _LPU237_callback(void*p_parameter);
-static void *_wait_worker(void *p_data);
+static void _display_key_data( unsigned long n_result_index );
+static void _display_card_or_key_data( unsigned long n_result_index );
+static void _LPU237_card_callback(void*p_parameter);
+static void _LPU237_key_callback(void*p_parameter);
+static void _LPU237_card_or_key_callback(void*p_parameter);
+static void *_wait_card_worker(void *p_data);
+static void *_wait_key_worker(void *p_data);
+static void *_wait_card_or_key_worker(void *p_data);
 
 static void _garbage_processing(bool b_close_need,bool b_off_need,LPU237_HANDLE h_dev );
 static bool _load_library();
@@ -46,12 +52,19 @@ static LPU237_HANDLE _open_device_wchar( const wstring & s_path );
 static bool _get_device_id( LPU237_HANDLE h_dev );
 static bool _enable_device( LPU237_HANDLE h_dev );
 static bool _disable_device( LPU237_HANDLE h_dev );
+
 static bool _read_card_by_sync( LPU237_HANDLE h_dev );
 static bool _read_card_by_async( LPU237_HANDLE h_dev );
 
+static bool _read_key_by_sync( LPU237_HANDLE h_dev );
+static bool _read_key_by_async( LPU237_HANDLE h_dev );
+
+static bool _read_card_or_key_by_sync( LPU237_HANDLE h_dev );
+static bool _read_card_or_key_by_async( LPU237_HANDLE h_dev );
+
 volatile bool gb_read_done = false;
 
-void _LPU237_callback(void*p_parameter)
+void _LPU237_card_callback(void*p_parameter)
 {
 	do{
 		_display_card_data( gn_result_index );
@@ -59,6 +72,25 @@ void _LPU237_callback(void*p_parameter)
 		gb_read_done = true;
 	}while(0);
 }
+
+void _LPU237_key_callback(void*p_parameter)
+{
+	do{
+		_display_card_data( gn_result_index );
+		cout << " = press enter key. for the next test." << endl;
+		gb_read_done = true;
+	}while(0);
+}
+
+void _LPU237_card_or_key_callback(void*p_parameter)
+{
+	do{
+		_display_card_data( gn_result_index );
+		cout << " = press enter key. for the next test." << endl;
+		gb_read_done = true;
+	}while(0);
+}
+
 void _display_card_data( unsigned long n_result_index )
 {
 	unsigned long n_result = 0;
@@ -94,7 +126,79 @@ void _display_card_data( unsigned long n_result_index )
 	}//end for
 }
 
-void *_wait_worker(void *p_data)
+
+void _display_key_data( unsigned long n_result_index )
+{
+	unsigned long n_result = 0;
+	vector<unsigned char> v_track(0);
+
+	for( unsigned long n_track = 0; n_track<3; n_track++ ){
+		v_track.resize(0);
+		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, NULL );
+		switch(n_result){
+		case LPU237_DLL_RESULT_ERROR:
+			cout << " <> error msr read - LPU237_DLL_RESULT_ERROR" << endl;
+			continue;
+		case LPU237_DLL_RESULT_CANCEL:
+			cout << " <> error msr read - LPU237_DLL_RESULT_CANCEL" << endl;
+			continue;
+		case LPU237_DLL_RESULT_ERROR_MSR:
+			cout << " <> error msr read - LPU237_DLL_RESULT_ERROR_MSR" << endl;
+			continue;
+		default:
+			if( n_result == 0){
+				cout << " = ok msr read - no data" << endl;
+				continue;
+			}
+			v_track.resize(n_result,0);
+			break;
+		}//end switch
+		//
+		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, &v_track[0] );
+		for_each( begin(v_track), end(v_track), [=](unsigned char c){
+			cout << (char)c;
+		});
+		cout << endl;
+	}//end for
+}
+
+
+void _display_card_or_key_data( unsigned long n_result_index )
+{
+	unsigned long n_result = 0;
+	vector<unsigned char> v_track(0);
+
+	for( unsigned long n_track = 0; n_track<3; n_track++ ){
+		v_track.resize(0);
+		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, NULL );
+		switch(n_result){
+		case LPU237_DLL_RESULT_ERROR:
+			cout << " <> error msr read - LPU237_DLL_RESULT_ERROR" << endl;
+			continue;
+		case LPU237_DLL_RESULT_CANCEL:
+			cout << " <> error msr read - LPU237_DLL_RESULT_CANCEL" << endl;
+			continue;
+		case LPU237_DLL_RESULT_ERROR_MSR:
+			cout << " <> error msr read - LPU237_DLL_RESULT_ERROR_MSR" << endl;
+			continue;
+		default:
+			if( n_result == 0){
+				cout << " = ok msr read - no data" << endl;
+				continue;
+			}
+			v_track.resize(n_result,0);
+			break;
+		}//end switch
+		//
+		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, &v_track[0] );
+		for_each( begin(v_track), end(v_track), [=](unsigned char c){
+			cout << (char)c;
+		});
+		cout << endl;
+	}//end for
+}
+
+void *_wait_card_worker(void *p_data)
 {
 	static int n_return_val = 0;
 
@@ -120,6 +224,58 @@ void *_wait_worker(void *p_data)
 	//return p_result;
 }
 
+void *_wait_key_worker(void *p_data)
+{
+	static int n_return_val = 0;
+
+	do{
+		LPU237_HANDLE h_dev = (LPU237_HANDLE)p_data;
+
+		if( h_dev == NULL )
+			continue;
+		//
+		unsigned long n_result_index = dll_lpu237::get_instance().LPU237_wait_key_with_waits(h_dev);
+		if( n_result_index == LPU237_DLL_RESULT_ERROR ){
+			cout << " <> fail LPU237_wait_key_with_waits. "<< endl;
+			continue;
+		}
+		_display_card_data( n_result_index );
+
+	}while(0);
+
+	cout << " = press enter key. for the next test." << endl;
+	gb_read_done = true;
+
+	pthread_exit((void*)&n_return_val);
+	//return p_result;
+}
+
+
+void *_wait_card_or_key_worker(void *p_data)
+{
+	static int n_return_val = 0;
+
+	do{
+		LPU237_HANDLE h_dev = (LPU237_HANDLE)p_data;
+
+		if( h_dev == NULL )
+			continue;
+		//
+		unsigned long n_result_index = dll_lpu237::get_instance().LPU237_wait_swipe_or_key_with_waits(h_dev);
+		if( n_result_index == LPU237_DLL_RESULT_ERROR ){
+			cout << " <> fail LPU237_wait_swipe_or_key_with_waits. "<< endl;
+			continue;
+		}
+		_display_card_data( n_result_index );
+
+	}while(0);
+
+	cout << " = press enter key. for the next test." << endl;
+	gb_read_done = true;
+
+	pthread_exit((void*)&n_return_val);
+	//return p_result;
+}
 // 권한 문제의 경우
 // KERNEL=="hidraw*", SUBSYSTEM=="hidraw", MODE="0666", GROUP="plugdev" 를 추가 할 것.
 //
@@ -192,18 +348,42 @@ int main( int argc, char **argv )
 
 		//++++++++++++++++++++++++++++++++++++++
 		// 6. reading msr by sync pattern.
-		for( n_test = 0; n_test<10; n_test++ ){
+		for( n_test = 0; n_test<2; n_test++ ){
 			_read_card_by_sync( h_dev );
 		}//end for n_test times
 
 		//++++++++++++++++++++++++++++++++++++++
 		// 7. reading msr by async pattern.
-		for( n_test = 0; n_test<10; n_test++ ){
+		for( n_test = 0; n_test<2; n_test++ ){
 			_read_card_by_async(h_dev);
 		}
 
 		//++++++++++++++++++++++++++++++++++++++
-		// 8. disable reading.
+		// 8. reading key by sync pattern.
+		for( n_test = 0; n_test<2; n_test++ ){
+			_read_key_by_sync( h_dev );
+		}//end for n_test times
+
+		//++++++++++++++++++++++++++++++++++++++
+		// 9. reading key by async pattern.
+		for( n_test = 0; n_test<2; n_test++ ){
+			_read_key_by_async(h_dev);
+		}
+
+		//++++++++++++++++++++++++++++++++++++++
+		// 10. reading msr or key by sync pattern.
+		for( n_test = 0; n_test<2; n_test++ ){
+			_read_card_or_key_by_sync( h_dev );
+		}//end for n_test times
+
+		//++++++++++++++++++++++++++++++++++++++
+		// 11. reading msr or key by async pattern.
+		for( n_test = 0; n_test<2; n_test++ ){
+			_read_card_or_key_by_async(h_dev);
+		}
+
+		//++++++++++++++++++++++++++++++++++++++
+		// 12. disable reading.
 		if( !_disable_device( h_dev ) )
 			continue;
 	}while(0);
@@ -464,7 +644,7 @@ bool _read_card_by_sync( LPU237_HANDLE h_dev )
 		pthread_t n_id = -1;
 		void *p_status = NULL;
 		//
-		int n_result = pthread_create(&n_id, NULL, _wait_worker, h_dev );
+		int n_result = pthread_create(&n_id, NULL, _wait_card_worker, h_dev );
 		if( n_result != 0 ){
 			cout << " <> fail create waiting worker. "<< endl;
 			continue;
@@ -477,7 +657,7 @@ bool _read_card_by_sync( LPU237_HANDLE h_dev )
 		cin.get() >> c_in;
 
 		if( !gb_read_done ){
-			n_result = dll_lpu237::get_instance().LPU237_cancel_wait_swipe(h_dev);
+			n_result = dll_lpu237::get_instance().LPU237_cancel_wait(h_dev);
 			if( n_result == LPU237_DLL_RESULT_SUCCESS )
 				cout << " = ok cancel" << endl;
 			else
@@ -501,7 +681,7 @@ bool _read_card_by_async( LPU237_HANDLE h_dev )
 		cout << " ******* read your card by async-method ******* " <<endl;
 		gb_read_done = false;
 		//
-		gn_result_index = dll_lpu237::get_instance().LPU237_wait_swipe_with_callback(h_dev,_LPU237_callback,NULL);
+		gn_result_index = dll_lpu237::get_instance().LPU237_wait_swipe_with_callback(h_dev,_LPU237_card_callback,NULL);
 		if( gn_result_index == LPU237_DLL_RESULT_ERROR ){
 			cout << " <> fail LPU237_wait_swipe_with_callback. "<< endl;
 			continue;
@@ -513,7 +693,7 @@ bool _read_card_by_async( LPU237_HANDLE h_dev )
 		cin.get() >> c_in;
 
 		if( !gb_read_done ){
-			n_result = dll_lpu237::get_instance().LPU237_cancel_wait_swipe(h_dev);
+			n_result = dll_lpu237::get_instance().LPU237_cancel_wait(h_dev);
 			if( n_result == LPU237_DLL_RESULT_SUCCESS )
 				cout << " = ok cancel" << endl;
 			else
@@ -526,3 +706,144 @@ bool _read_card_by_async( LPU237_HANDLE h_dev )
 	return b_result;
 }
 
+bool _read_key_by_sync( LPU237_HANDLE h_dev )
+{
+	bool b_result(false);
+
+	do{
+		gb_read_done = false;
+		pthread_t n_id = -1;
+		void *p_status = NULL;
+		//
+		int n_result = pthread_create(&n_id, NULL, _wait_key_worker, h_dev );
+		if( n_result != 0 ){
+			cout << " <> fail create waiting worker. "<< endl;
+			continue;
+		}
+		//
+		cout << " ******* read your ibutton by sync-method ******* " <<endl;
+		cout << " = waiting status =  " << endl;
+		cout << " = if you want to cancel, press enter key." << endl;
+		char c_in(0);
+		cin.get() >> c_in;
+
+		if( !gb_read_done ){
+			n_result = dll_lpu237::get_instance().LPU237_cancel_wait(h_dev);
+			if( n_result == LPU237_DLL_RESULT_SUCCESS )
+				cout << " = ok cancel" << endl;
+			else
+				cout << " <> fail cancel" << endl;
+		}
+
+		pthread_join(n_id,&p_status);
+
+		b_result = true;
+	}while(0);
+
+	return b_result;
+}
+
+bool _read_key_by_async( LPU237_HANDLE h_dev )
+{
+	bool b_result(false);
+	unsigned long n_result(LPU237_DLL_RESULT_SUCCESS);
+
+	do{
+		cout << " ******* read your key by async-method ******* " <<endl;
+		gb_read_done = false;
+		//
+		gn_result_index = dll_lpu237::get_instance().LPU237_wait_key_with_callback(h_dev,_LPU237_key_callback,NULL);
+		if( gn_result_index == LPU237_DLL_RESULT_ERROR ){
+			cout << " <> fail LPU237_wait_key_with_callback. "<< endl;
+			continue;
+		}
+
+		cout << " = waiting status =  " << gn_result_index << endl;
+		cout << " = if you want to cancel, press enter key." << endl;
+		char c_in(0);
+		cin.get() >> c_in;
+
+		if( !gb_read_done ){
+			n_result = dll_lpu237::get_instance().LPU237_cancel_wait(h_dev);
+			if( n_result == LPU237_DLL_RESULT_SUCCESS )
+				cout << " = ok cancel" << endl;
+			else
+				cout << " <> fail cancel" << endl;
+		}
+
+		b_result = true;
+	}while(0);
+
+	return b_result;
+}
+
+bool _read_card_or_key_by_sync( LPU237_HANDLE h_dev )
+{
+	bool b_result(false);
+
+	do{
+		gb_read_done = false;
+		pthread_t n_id = -1;
+		void *p_status = NULL;
+		//
+		int n_result = pthread_create(&n_id, NULL, _wait_card_or_key_worker, h_dev );
+		if( n_result != 0 ){
+			cout << " <> fail create waiting worker. "<< endl;
+			continue;
+		}
+		//
+		cout << " ******* read your card or key by sync-method ******* " <<endl;
+		cout << " = waiting status =  " << endl;
+		cout << " = if you want to cancel, press enter key." << endl;
+		char c_in(0);
+		cin.get() >> c_in;
+
+		if( !gb_read_done ){
+			n_result = dll_lpu237::get_instance().LPU237_cancel_wait(h_dev);
+			if( n_result == LPU237_DLL_RESULT_SUCCESS )
+				cout << " = ok cancel" << endl;
+			else
+				cout << " <> fail cancel" << endl;
+		}
+
+		pthread_join(n_id,&p_status);
+
+		b_result = true;
+	}while(0);
+
+	return b_result;
+}
+
+bool _read_card_or_key_by_async( LPU237_HANDLE h_dev )
+{
+	bool b_result(false);
+	unsigned long n_result(LPU237_DLL_RESULT_SUCCESS);
+
+	do{
+		cout << " ******* read your card or key by async-method ******* " <<endl;
+		gb_read_done = false;
+		//
+		gn_result_index = dll_lpu237::get_instance().LPU237_wait_swipe_or_key_with_callback(h_dev,_LPU237_card_or_key_callback,NULL);
+		if( gn_result_index == LPU237_DLL_RESULT_ERROR ){
+			cout << " <> fail LPU237_wait_swipe_or_key_with_callback. "<< endl;
+			continue;
+		}
+
+		cout << " = waiting status =  " << gn_result_index << endl;
+		cout << " = if you want to cancel, press enter key." << endl;
+		char c_in(0);
+		cin.get() >> c_in;
+
+		if( !gb_read_done ){
+			n_result = dll_lpu237::get_instance().LPU237_cancel_wait(h_dev);
+			if( n_result == LPU237_DLL_RESULT_SUCCESS )
+				cout << " = ok cancel" << endl;
+			else
+				cout << " <> fail cancel" << endl;
+		}
+
+		b_result = true;
+	}while(0);
+
+	return b_result;
+}
