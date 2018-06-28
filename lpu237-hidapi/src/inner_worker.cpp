@@ -3,12 +3,15 @@
  *
  *  Created on: 2018. 6. 14.
  *      Author: totoro
+ *      This code is released under the terms of the MIT License
  */
 
 #include <inner_worker.h>
 #include <vector>
 #include <string.h>
 #include <mutex>
+
+#include <inner_log.h>
 
 using namespace std;
 
@@ -38,10 +41,14 @@ m_h_pump(NULL)
 , m_fun_flush(fun_flush)
 {
 	do{
-		if( m_evet_kill.get_handle() == NULL )
+		if( m_evet_kill.get_handle() == NULL ){
+			LOG_ERROR("m_evet_kill.get_handle() == NULL");
 			continue;
-		if( m_evet_wakeup.get_handle() == NULL )
+		}
+		if( m_evet_wakeup.get_handle() == NULL ){
+			LOG_ERROR("m_evet_wakeup.get_handle() == NULL");
 			continue;
+		}
 		//
 		m_cur_job.b_process = 0;
 		m_cur_job.h_dev = 0;
@@ -115,12 +122,15 @@ bool inner_worker::start_worker()
 	int n_result = 0;
 
 	do{
-		if( m_n_id != (pthread_t)-1 )
+		if( m_n_id != (pthread_t)-1 ){
+			LOG_WARNING("already started.");
 			continue;//already started
+		}
 		//
 		n_result = pthread_create(&m_n_id, NULL, inner_worker::_worker, (void *)this);
 		if( n_result != 0 ){
 			m_n_id = -1;
+			LOG_ERROR("pthread_create()");
 			continue;
 		}
 		//success
@@ -137,10 +147,14 @@ bool inner_worker::_stop()
 	void *p_status = NULL;
 
 	do{
-		if( m_n_id == (pthread_t)-1 )
+		if( m_n_id == (pthread_t)-1 ){
+			LOG_WARNING("already stop");
 			continue;
-		if( m_evet_kill.get_handle() == NULL )
+		}
+		if( m_evet_kill.get_handle() == NULL ){
+			LOG_ERROR("m_evet_kill.get_handle() == NULL");
 			continue;
+		}
 		m_evet_kill.set();
 
 		pthread_join(m_n_id,&p_status);
@@ -213,8 +227,10 @@ bool inner_worker::_job_process()
 		//
 		type_job_item item;
 
-		if( !_job_pop( item ) )
+		if( !_job_pop( item ) ){
+			LOG_ERROR("!_job_pop()");
 			continue;
+		}
 		//
 		if( item.b_pump_rx )
 			m_h_pump = item.h_dev;
@@ -268,6 +284,7 @@ bool inner_worker::_job_process()
 				b_tx_continue = true;
 				break;
 			default:
+				LOG_WARNING("m_fun_tx() return unknown");
 				break;
 			}//end switch
 
@@ -312,6 +329,7 @@ bool inner_worker::_idle_process()
 			m_cur_job.b_process = true;	//continue idle process.
 			break;
 		default:
+			LOG_WARNING("m_fun_rx() return unknown");
 			break;
 		}//end switch
 
@@ -422,15 +440,15 @@ int inner_worker::push_job( type_job_item & item )
 	do{//m_n_cur_result_index
 		if( item.n_index == -1 ){
 			//auto generation
-			item.n_index = m_n_cur_result_index;
+			n_index = item.n_index = m_n_cur_result_index;
 			m_n_cur_result_index++;
 			if( m_n_cur_result_index < 0)
 				m_n_cur_result_index = 1;//reset
-			n_index = item.n_index;
 		}
 
 		if( !_job_push( item ) ){
 			n_index = -1;
+			LOG_ERROR("!_job_push()");
 			continue;
 		}
 
@@ -438,6 +456,7 @@ int inner_worker::push_job( type_job_item & item )
 			type_job_item item;
 			_job_pop( item );
 			n_index = -1;
+			LOG_ERROR("!_create_result()");
 			continue;
 		}
 
@@ -523,11 +542,15 @@ void inner_worker::_notify_result(
 		)
 {
 	do{
-		if( !_set_result( item.n_index, result_fun, v_rx ) )
+		if( !_set_result( item.n_index, result_fun, v_rx ) ){
+			LOG_ERROR("!_set_result()");
 			continue;
+		}
 		inner_event *p_evet = get_result_event( item.n_index );
-		if( p_evet == NULL )
+		if( p_evet == NULL ){
+			LOG_ERROR("p_evet == NULL");
 			continue;
+		}
 		p_evet->set();
 
 		//call callback
@@ -539,11 +562,15 @@ void inner_worker::_notify_result(
 void inner_worker::_notify_result( type_result_fun result_fun )
 {
 	do{
-		if( !_set_result( m_cur_job.n_index, result_fun, *(m_cur_job.ptr_rx) ) )
+		if( !_set_result( m_cur_job.n_index, result_fun, *(m_cur_job.ptr_rx) ) ){
+			LOG_ERROR("!_set_result()");
 			continue;
+		}
 		inner_event *p_evet = get_result_event( m_cur_job.n_index );
-		if( p_evet == NULL )
+		if( p_evet == NULL ){
+			LOG_ERROR("p_evet == NULL");
 			continue;
+		}
 		p_evet->set();
 
 		//call callback

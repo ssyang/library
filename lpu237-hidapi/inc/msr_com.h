@@ -3,6 +3,7 @@
  *
  *  Created on: 2018. 6. 14.
  *      Author: totoro
+ *      This code is released under the terms of the MIT License
  */
 
 #ifndef INC_MSR_COM_H_

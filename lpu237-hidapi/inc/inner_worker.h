@@ -3,6 +3,7 @@
  *
  *  Created on: 2018. 6. 14.
  *      Author: totoro
+ *      This code is released under the terms of the MIT License
  */
 
 #ifndef INC_INNER_WORKER_H_
@@ -75,7 +76,7 @@ public:
 
 private:
 	enum{
-		const_worker_timeout_wait = 10	//msec
+		const_worker_timeout_wait = 5	//msec
 	};
 public:
 	~inner_worker();

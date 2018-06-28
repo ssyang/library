@@ -3,6 +3,7 @@
  *
  *  Created on: 2018. 6. 18.
  *      Author: totoro
+ *      This code is released under the terms of the MIT License
  */
 
 #include "inner_event.h"

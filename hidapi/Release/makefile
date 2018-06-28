@@ -56,7 +56,7 @@ clean:
 
 post-build:
 	-@echo 'generates symblic link'
-	-rm /home/totoro/work/library/common/hidapi/lib/Release/libhidapi.so;cp -f libhidapi.so.0.8.0 /home/totoro/work/library/common/hidapi/lib/Release;cp -f libhidapi.so.0.8.0 /home/totoro/work/library/tp_hidapi/Release;ln -s /home/totoro/work/library/common/hidapi/lib/Release/libhidapi.so.0.8.0 /home/totoro/work/library/common/hidapi/lib/Release/libhidapi.so
+	-strip libhidapi.so.0.8.0;rm /home/totoro/work/library/common/hidapi/lib/Release/libhidapi.so;cp -f libhidapi.so.0.8.0 /home/totoro/work/library/common/hidapi/lib/Release;cp -f libhidapi.so.0.8.0 /home/totoro/work/library/tp_hidapi/Release;ln -s /home/totoro/work/library/common/hidapi/lib/Release/libhidapi.so.0.8.0 /home/totoro/work/library/common/hidapi/lib/Release/libhidapi.so
 	-@echo ' '
 
 .PHONY: all clean dependents post-build

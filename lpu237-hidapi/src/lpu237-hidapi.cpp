@@ -3,6 +3,7 @@
  *
  *  Created on: 2018. 6. 12.
  *      Author: totoro
+ *      This code is released under the terms of the MIT License
  */
 
 #include "lpu237-hidapi.h"
@@ -171,14 +172,16 @@ inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_
 		memcpy( &((*ptr_rx)[n_offset]), s_in_report, n_read );
 
 		if( ptr_rx->size() < MSR_SIZE_HOST_PACKET_HEADER ){
+			LOG_INFO("ptr_rx->size() < MSR_SIZE_HOST_PACKET_HEADER");
 			result_fun =  inner_worker::result_fun_ing;
 			continue;
 		}
 
 		// check packet
-		type_pmsr_host_packet p_packet = (type_pmsr_host_packet)&((*ptr_rx)[0]);
-		if( (size_t)(p_packet->c_len + MSR_SIZE_HOST_PACKET_HEADER) > ptr_rx->size() ){
+		//type_pmsr_host_packet p_packet = (type_pmsr_host_packet)&((*ptr_rx)[0]);
+		if( n_in_report > ptr_rx->size() ){
 			result_fun =  inner_worker::result_fun_ing;
+			LOG_INFO("ptr_rx->size() : %d",ptr_rx->size());
 			continue;
 		}
 
@@ -957,7 +960,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 
 			ps_data = &((*result.ptr_rx)[0]);
 			if( ((signed char)ps_data[dw_iso_track-1] )<0 ){
-				LOG_ERROR("track %u : size = %d",dw_iso_track,(int)ps_data[dw_iso_track-1]);
+				LOG_ERROR("track %u : error code = 0x%x",dw_iso_track,ps_data[dw_iso_track-1]);
 				dw_result = LPU237_DLL_RESULT_ERROR_MSR;
 				continue;
 			}

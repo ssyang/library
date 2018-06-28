@@ -4,6 +4,7 @@
 // Version     :
 // Copyright   : Your copyright notice
 // Description : Hello World in C++, Ansi-style
+// This code is released under the terms of the MIT License
 //============================================================================
 
 #include <iostream>

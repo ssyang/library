@@ -3,6 +3,7 @@
  *
  *  Created on: 2018. 6. 20.
  *      Author: totoro
+ *      This code is released under the terms of the MIT License
  */
 
 #ifndef DLL_LPU237_H_

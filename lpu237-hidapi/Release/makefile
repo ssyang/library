@@ -58,7 +58,7 @@ clean:
 
 post-build:
 	-@echo 'copy so'
-	-cp -f liblpu237-hidapi.so.1.0.0 /home/totoro/work/library/common/lpu237-hidapi/lib/Release;cp -f liblpu237-hidapi.so.1.0.0 /home/totoro/work/library/tp_hidapi/Release
+	-strip liblpu237-hidapi.so.1.0.0;cp -f liblpu237-hidapi.so.1.0.0 /home/totoro/work/library/common/lpu237-hidapi/lib/Release;cp -f liblpu237-hidapi.so.1.0.0 /home/totoro/work/library/tp_hidapi/Release
 	-@echo ' '
 
 .PHONY: all clean dependents post-build

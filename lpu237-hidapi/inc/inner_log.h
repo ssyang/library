@@ -3,6 +3,7 @@
  *
  *  Created on: 2018. 6. 25.
  *      Author: totoro
+ *      This code is released under the terms of the MIT License
  */
 
 #ifndef INC_INNER_LOG_H_
