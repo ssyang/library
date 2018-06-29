@@ -8,6 +8,7 @@
 //============================================================================
 
 #include <iostream>
+#include <iomanip>
 
 #include "dll_lpu237.h"
 #include "stdlib.h"
@@ -76,7 +77,7 @@ void _LPU237_card_callback(void*p_parameter)
 void _LPU237_key_callback(void*p_parameter)
 {
 	do{
-		_display_card_data( gn_result_index );
+		_display_key_data( gn_result_index );
 		cout << " = press enter key. for the next test." << endl;
 		gb_read_done = true;
 	}while(0);
@@ -85,7 +86,7 @@ void _LPU237_key_callback(void*p_parameter)
 void _LPU237_card_or_key_callback(void*p_parameter)
 {
 	do{
-		_display_card_data( gn_result_index );
+		_display_card_or_key_data( gn_result_index );
 		cout << " = press enter key. for the next test." << endl;
 		gb_read_done = true;
 	}while(0);
@@ -104,6 +105,7 @@ void _display_card_data( unsigned long n_result_index )
 			cout << " <> error msr read - LPU237_DLL_RESULT_ERROR" << endl;
 			continue;
 		case LPU237_DLL_RESULT_CANCEL:
+			n_track = 3;//exit for
 			cout << " <> error msr read - LPU237_DLL_RESULT_CANCEL" << endl;
 			continue;
 		case LPU237_DLL_RESULT_ERROR_MSR:
@@ -115,14 +117,15 @@ void _display_card_data( unsigned long n_result_index )
 				continue;
 			}
 			v_track.resize(n_result,0);
+
+			n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, &v_track[0] );
+			for_each( begin(v_track), end(v_track), [=](unsigned char c){
+				cout << (char)c;
+			});
+			cout << endl;
 			break;
 		}//end switch
 		//
-		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, &v_track[0] );
-		for_each( begin(v_track), end(v_track), [=](unsigned char c){
-			cout << (char)c;
-		});
-		cout << endl;
 	}//end for
 }
 
@@ -130,72 +133,96 @@ void _display_card_data( unsigned long n_result_index )
 void _display_key_data( unsigned long n_result_index )
 {
 	unsigned long n_result = 0;
-	vector<unsigned char> v_track(0);
+	vector<unsigned char> v_key(0);
 
-	for( unsigned long n_track = 0; n_track<3; n_track++ ){
-		v_track.resize(0);
-		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, NULL );
-		switch(n_result){
-		case LPU237_DLL_RESULT_ERROR:
-			cout << " <> error msr read - LPU237_DLL_RESULT_ERROR" << endl;
-			continue;
-		case LPU237_DLL_RESULT_CANCEL:
-			cout << " <> error msr read - LPU237_DLL_RESULT_CANCEL" << endl;
-			continue;
-		case LPU237_DLL_RESULT_ERROR_MSR:
-			cout << " <> error msr read - LPU237_DLL_RESULT_ERROR_MSR" << endl;
-			continue;
-		default:
-			if( n_result == 0){
-				cout << " = ok msr read - no data" << endl;
-				continue;
-			}
-			v_track.resize(n_result,0);
+	v_key.resize(0);
+	n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, 0, NULL );
+	switch(n_result){
+	case LPU237_DLL_RESULT_ERROR:
+		cout << " <> error key read - LPU237_DLL_RESULT_ERROR" << endl;
+		break;
+	case LPU237_DLL_RESULT_CANCEL:
+		cout << " <> error key read - LPU237_DLL_RESULT_CANCEL" << endl;
+		break;
+	case LPU237_DLL_RESULT_ERROR_MSR:
+		cout << " <> error key read - LPU237_DLL_RESULT_ERROR_MSR" << endl;
+		break;
+	default:
+		if( n_result == 0){
+			cout << " = ok key read - no data" << endl;
 			break;
-		}//end switch
-		//
-		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, &v_track[0] );
-		for_each( begin(v_track), end(v_track), [=](unsigned char c){
-			cout << (char)c;
+		}
+		v_key.resize(n_result,0);
+		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, 0, &v_key[0] );
+		for_each( begin(v_key), end(v_key), [=](unsigned char c){
+			cout << internal  << setfill('0') << hex << setw(2) << (int)c;
 		});
 		cout << endl;
-	}//end for
+		break;
+	}//end switch
+	//
 }
-
 
 void _display_card_or_key_data( unsigned long n_result_index )
 {
 	unsigned long n_result = 0;
-	vector<unsigned char> v_track(0);
+	vector<unsigned char> v_data(0);
 
-	for( unsigned long n_track = 0; n_track<3; n_track++ ){
-		v_track.resize(0);
-		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, NULL );
+	do{
+		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, 0, NULL );
 		switch(n_result){
-		case LPU237_DLL_RESULT_ERROR:
-			cout << " <> error msr read - LPU237_DLL_RESULT_ERROR" << endl;
-			continue;
 		case LPU237_DLL_RESULT_CANCEL:
-			cout << " <> error msr read - LPU237_DLL_RESULT_CANCEL" << endl;
+			cout << " <> error read - LPU237_DLL_RESULT_CANCEL" << endl;
 			continue;
+		case LPU237_DLL_RESULT_ERROR:
 		case LPU237_DLL_RESULT_ERROR_MSR:
-			cout << " <> error msr read - LPU237_DLL_RESULT_ERROR_MSR" << endl;
-			continue;
+			break;
 		default:
 			if( n_result == 0){
-				cout << " = ok msr read - no data" << endl;
-				continue;
+				cout << " = ok key read - no data" << endl;
 			}
-			v_track.resize(n_result,0);
-			break;
+			else{
+				v_data.resize(n_result,0);
+				n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, 0, &v_data[0] );
+				for_each( begin(v_data), end(v_data), [=](unsigned char c){
+					cout << internal  << setfill('0') << hex << setw(2) << (int)c;
+				});
+				cout << endl;
+			}
+			continue;
 		}//end switch
 		//
-		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, &v_track[0] );
-		for_each( begin(v_track), end(v_track), [=](unsigned char c){
-			cout << (char)c;
-		});
-		cout << endl;
-	}//end for
+		for( unsigned long n_track = 0; n_track<3; n_track++ ){
+			v_data.resize(0);
+			n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, NULL );
+			switch(n_result){
+			case LPU237_DLL_RESULT_ERROR:
+				cout << " <> error msr read - LPU237_DLL_RESULT_ERROR" << endl;
+				continue;
+			case LPU237_DLL_RESULT_CANCEL:
+				n_track = 3;//exit for
+				cout << " <> error msr read - LPU237_DLL_RESULT_CANCEL" << endl;
+				continue;
+			case LPU237_DLL_RESULT_ERROR_MSR:
+				cout << " <> error msr read - LPU237_DLL_RESULT_ERROR_MSR" << endl;
+				continue;
+			default:
+				if( n_result == 0){
+					cout << " = ok msr read - no data" << endl;
+				}
+				else{
+					v_data.resize(n_result,0);
+					n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, &v_data[0] );
+					for_each( begin(v_data), end(v_data), [=](unsigned char c){
+						cout << (char)c;
+					});
+					cout << endl;
+				}
+				continue;
+			}//end switch
+			//
+		}//end for
+	}while(0);
 }
 
 void *_wait_card_worker(void *p_data)
@@ -239,7 +266,7 @@ void *_wait_key_worker(void *p_data)
 			cout << " <> fail LPU237_wait_key_with_waits. "<< endl;
 			continue;
 		}
-		_display_card_data( n_result_index );
+		_display_key_data( n_result_index );
 
 	}while(0);
 
@@ -266,7 +293,7 @@ void *_wait_card_or_key_worker(void *p_data)
 			cout << " <> fail LPU237_wait_swipe_or_key_with_waits. "<< endl;
 			continue;
 		}
-		_display_card_data( n_result_index );
+		_display_card_or_key_data( n_result_index );
 
 	}while(0);
 
