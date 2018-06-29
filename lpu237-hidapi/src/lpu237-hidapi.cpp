@@ -27,9 +27,9 @@ const char gs_ibutton_post[] = "this_is_ibutton_data";
 const int gn_ibutton_data_size = 8;
 
 //
-static inner_worker::type_result_fun _flush_callback( void *h_dev );
-static inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::type_ptr_buffer & ptr_tx, inner_worker::type_mode mode );
-static inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_buffer & ptr_rx, inner_worker::type_mode mode );
+static shared::type_result_fun _flush_callback( void *h_dev );
+static shared::type_result_fun _tx_callback( void *h_dev, const shared::type_ptr_buffer & ptr_tx, inner_worker::type_mode mode );
+static shared::type_result_fun _rx_callback( void *h_dev, shared::type_ptr_buffer & ptr_rx, inner_worker::type_mode mode );
 static int _cmd_tx_rx(
 		hid_device *h_dev
 		, type_msr_cmd cmd
@@ -51,24 +51,24 @@ static unsigned long _leave_opos( LPU237_HANDLE h_dev );
 static const string & _get_return_string( unsigned long n_result );
 /////////////////////////////////////////////////////
 //local function body.
-inner_worker::type_result_fun _flush_callback( void *h_dev )
+shared::type_result_fun _flush_callback( void *h_dev )
 {
-	inner_worker::type_result_fun result_fun =  inner_worker::result_fun_error;
+	shared::type_result_fun result_fun =  shared::result_fun_error;
 
 	do{
 		if( h_dev == 0 )
 			continue;
 		//if( hid_flush( (hid_device*)h_dev ) != 0 )
 		//	continue;
-		result_fun = inner_worker::result_fun_success;
+		result_fun = shared::result_fun_success;
 	}while(0);
 
 	return result_fun;
 }
 
-inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::type_ptr_buffer & ptr_tx,inner_worker::type_mode mode )
+shared::type_result_fun _tx_callback( void *h_dev, const shared::type_ptr_buffer & ptr_tx,inner_worker::type_mode mode )
 {
-	inner_worker::type_result_fun result_fun =  inner_worker::result_fun_error;
+	shared::type_result_fun result_fun =  shared::result_fun_error;
 	unsigned long n_result = 0;
 	unsigned long n_offset = 0;
 	unsigned long n_packet = 0;
@@ -133,15 +133,15 @@ inner_worker::type_result_fun _tx_callback( void *h_dev, const inner_worker::typ
 		}while( n_tx > n_offset);
 
 		if( n_result > 0 )
-			result_fun =  inner_worker::result_fun_success;
+			result_fun =  shared::result_fun_success;
 	}while(0);
 
 	return result_fun;
 }
 
-inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_buffer & ptr_rx, inner_worker::type_mode mode )
+shared::type_result_fun _rx_callback( void *h_dev, shared::type_ptr_buffer & ptr_rx, inner_worker::type_mode mode )
 {
-	inner_worker::type_result_fun result_fun =  inner_worker::result_fun_error;
+	shared::type_result_fun result_fun =  shared::result_fun_error;
 	int n_result = 0;
 	int n_read = 0;
 	unsigned char n_in_report = 220;
@@ -162,12 +162,12 @@ inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_
 			continue;
 		}
 		if( n_read == 0 ){
-			result_fun =  inner_worker::result_fun_ing;
+			result_fun =  shared::result_fun_ing;
 			continue;
 		}
 		//resize rx buffer & copy rx data.
 		if( ptr_rx == nullptr ){
-			ptr_rx = inner_worker::type_ptr_buffer( new inner_worker::type_buffer(n_read));
+			ptr_rx = shared::type_ptr_buffer( new shared::type_buffer(n_read));
 		}
 		else{
 			n_offset = ptr_rx->size();
@@ -180,7 +180,7 @@ inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_
 				mode == inner_worker::mode_msr_or_key
 				){
 			if( n_in_report > ptr_rx->size() ){
-				result_fun =  inner_worker::result_fun_ing;
+				result_fun =  shared::result_fun_ing;
 				LOG_INFO("ptr_rx->size() : %d",ptr_rx->size());
 				continue;
 			}
@@ -188,13 +188,13 @@ inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_
 		else if( mode == inner_worker::mode_system ){
 			if( ptr_rx->size() < MSR_SIZE_HOST_PACKET_HEADER ){
 				LOG_INFO("ptr_rx->size() < MSR_SIZE_HOST_PACKET_HEADER");
-				result_fun =  inner_worker::result_fun_ing;
+				result_fun =  shared::result_fun_ing;
 				continue;
 			}
 
 			type_pmsr_host_packet p_packet = (type_pmsr_host_packet)&((*ptr_rx)[0]);
 			if( (size_t)(p_packet->c_len+MSR_SIZE_HOST_PACKET_HEADER) > ptr_rx->size() ){
-				result_fun =  inner_worker::result_fun_ing;
+				result_fun =  shared::result_fun_ing;
 				LOG_INFO("ptr_rx->size() : %d",ptr_rx->size());
 				continue;
 			}
@@ -205,11 +205,11 @@ inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_
 			continue;
 		}
 
-		result_fun =  inner_worker::result_fun_success;
+		result_fun =  shared::result_fun_success;
 	}while(0);
 
 	do{
-		if( result_fun != inner_worker::result_fun_success )
+		if( result_fun != shared::result_fun_success )
 			continue;
 		if( ptr_rx == nullptr )
 			continue;
@@ -225,14 +225,14 @@ inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_
 			if(p_packet->c_rsp != 'R' ){
 				ptr_rx->resize(0);//reset buffer
 				LOG_ERROR("mismatching mode");
-				result_fun = inner_worker::result_fun_ing;
+				result_fun = shared::result_fun_ing;
 			}
 			break;
 		case inner_worker::mode_key:
 			if(ps_data[0] != 0 || ps_data[1] != 0 || ps_data[2] != 0 ){
 				ptr_rx->resize(0);//reset buffer
 				LOG_ERROR("mismatching mode");
-				result_fun = inner_worker::result_fun_ing;
+				result_fun = shared::result_fun_ing;
 				break;
 			}
 
@@ -240,7 +240,7 @@ inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_
 			if( strcmp(&v_ibutton_post[0],gs_ibutton_post )!=0 ){
 				ptr_rx->resize(0);//reset buffer
 				LOG_ERROR("mismatching mode");
-				result_fun = inner_worker::result_fun_ing;
+				result_fun = shared::result_fun_ing;
 			}
 			break;
 		case inner_worker::mode_msr:
@@ -250,13 +250,13 @@ inner_worker::type_result_fun _rx_callback( void *h_dev, inner_worker::type_ptr_
 			if( strcmp(&v_ibutton_post[0],gs_ibutton_post )==0 ){
 				ptr_rx->resize(0);//reset buffer
 				LOG_ERROR("mismatching mode");
-				result_fun = inner_worker::result_fun_ing;
+				result_fun = shared::result_fun_ing;
 			}
 			break;
 		case inner_worker::mode_msr_or_key:
 			break;
 		default:
-			result_fun = inner_worker::result_fun_error;
+			result_fun = shared::result_fun_error;
 			LOG_ERROR("unknown mode");
 			break;
 		}//end switch
@@ -300,7 +300,7 @@ int _cmd_tx_rx(
 		if( n_rx > 0 && s_rx != NULL )
 			b_need_response = true;
 		//
-		inner_worker::type_buffer v_tx( n_tx );
+		shared::type_buffer v_tx( n_tx );
 
 		type_pmsr_host_packet p_tx = (type_pmsr_host_packet)&(v_tx[0]);
 		p_tx->c_cmd = (unsigned char)cmd;
@@ -335,7 +335,7 @@ int _cmd_tx_rx(
 				LOG_ERROR("get_result_and_delete");
 				continue;
 			}
-			if( result.result_fun != inner_worker::result_fun_success ){
+			if( result.result_fun != shared::result_fun_success ){
 				n_result_key = -1;//error
 				LOG_ERROR("result_fun = %d",result.result_fun );
 				continue;
@@ -861,7 +861,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait( LPU237
 			continue;
 		}
 		//
-		inner_worker::type_buffer v_tx(0);
+		shared::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
 				(void *)h_dev
 				, v_tx
@@ -885,7 +885,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait( LPU237
 			LOG_ERROR("get_result_and_delete()");
 			continue;
 		}
-		if( result.result_fun != inner_worker::result_fun_success ){
+		if( result.result_fun != shared::result_fun_success ){
 			n_result_key = -1;//error
 			LOG_ERROR("result_fun(%d) != result_fun_success",(int)result.result_fun );
 			continue;
@@ -915,7 +915,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_wai
 			continue;
 		}
 		//
-		inner_worker::type_buffer v_tx(0);
+		shared::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
 				(void*)h_dev
 				, v_tx
@@ -962,7 +962,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_waits
 			continue;
 		}
 		//
-		inner_worker::type_buffer v_tx(0);
+		shared::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
 				(void*)h_dev
 				, v_tx
@@ -1011,7 +1011,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_w
 			continue;
 		}
 		//
-		inner_worker::type_buffer v_tx(0);
+		shared::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
 				(void*)h_dev
 				, v_tx
@@ -1061,7 +1061,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_cal
 		}
 		//
 		// no wait part.
-		inner_worker::type_buffer v_tx(0);
+		shared::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
 				h_dev
 				, v_tx
@@ -1100,7 +1100,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_callb
 		}
 		//
 		// no wait part.
-		inner_worker::type_buffer v_tx(0);
+		shared::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
 				h_dev
 				, v_tx
@@ -1141,7 +1141,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_w
 		}
 		//
 		// no wait part.
-		inner_worker::type_buffer v_tx(0);
+		shared::type_buffer v_tx(0);
 		int n_result_key = inner_worker::get_instance().push_job(
 				h_dev
 				, v_tx
@@ -1174,7 +1174,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_w
 unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned long dw_buffer_index, unsigned long dw_iso_track, unsigned char *s_track_data )
 {
 	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
-	static inner_worker::type_job_result result = { inner_worker::result_fun_success, nullptr, nullptr };
+	static inner_worker::type_job_result result = { shared::result_fun_success, nullptr, nullptr };
 	static int n_cur_result_index = -1;
 	int n_new_result_index = (int)dw_buffer_index;
 	unsigned char *ps_data = NULL;
@@ -1206,10 +1206,10 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 		}
 
 		switch( result.result_fun ){
-		case inner_worker::result_fun_cancel:
+		case shared::result_fun_cancel:
 			dw_result = LPU237_DLL_RESULT_CANCEL;
 			continue;
-		case inner_worker::result_fun_success:
+		case shared::result_fun_success:
 			dw_result = 0;
 			if( result.ptr_rx == nullptr ){
 				LOG_ERROR("result.ptr_rx == nullptr");
@@ -1278,10 +1278,10 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 				}//end for
 			}
 			break;
-		case inner_worker::result_fun_ing:
+		case shared::result_fun_ing:
 			LOG_ERROR("result_fun == result_fun_ing");
 			break;
-		case inner_worker::result_fun_error:
+		case shared::result_fun_error:
 			LOG_ERROR("result_fun == result_fun_error");
 			break;
 		default:

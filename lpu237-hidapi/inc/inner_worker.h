@@ -17,6 +17,7 @@
 
 #include <pthread.h>
 
+#include <shared.h>
 #include "lpu237-hidapi.h"
 #include "inner_event.h"
 
@@ -32,24 +33,15 @@ public:
 		mode_system = 4
 	}type_mode;
 
-	typedef enum{
-		result_fun_success = 0,
-		result_fun_error = 1,
-		result_fun_ing = 2,
-		result_fun_cancel = 3
-	} type_result_fun;
-
 	typedef	shared_ptr<inner_event>	type_ptr_event;
-	typedef	vector<unsigned char>	type_buffer;
-	typedef	shared_ptr<type_buffer>	type_ptr_buffer;
 
-	typedef	type_result_fun(*type_fun_tx)(void *h_dev, const type_ptr_buffer & ptr_tx, type_mode mode );
-	typedef	type_result_fun(*type_fun_rx)(void *h_dev, type_ptr_buffer & ptr_rx, type_mode mode );
-	typedef	type_result_fun(*type_fun_flush)(void *h_dev );
+	typedef	shared::type_result_fun(*type_fun_tx)(void *h_dev, const shared::type_ptr_buffer & ptr_tx, type_mode mode );
+	typedef	shared::type_result_fun(*type_fun_rx)(void *h_dev, shared::type_ptr_buffer & ptr_rx, type_mode mode );
+	typedef	shared::type_result_fun(*type_fun_flush)(void *h_dev );
 
 	typedef struct tag_job_item{
 		void *h_dev;
-		type_ptr_buffer ptr_tx;
+		shared::type_ptr_buffer ptr_tx;
 		bool b_rx;	//need response.
 		bool b_pump_rx;// when idle pumping rx.
 		type_mode mode;
@@ -66,8 +58,8 @@ public:
 
 		void *h_dev;
 
-		type_ptr_buffer ptr_tx;
-		type_ptr_buffer ptr_rx;
+		shared::type_ptr_buffer ptr_tx;
+		shared::type_ptr_buffer ptr_rx;
 
 		LPU237_type_callback fun_wait;	//callback for wait thread
 		void *p_parameter_for_fun_wait;
@@ -76,8 +68,8 @@ public:
 	}type_job_process;
 
 	typedef struct tag_job_result{
-		type_result_fun result_fun;
-		type_ptr_buffer ptr_rx;
+		shared::type_result_fun result_fun;
+		shared::type_ptr_buffer ptr_rx;
 		type_ptr_event ptr_event_notify;
 		type_mode mode;
 	}type_job_result;
@@ -99,7 +91,7 @@ public:
 	// return result map key
 	int push_job(
 			void *h_dev,
-			type_buffer & v_tx,
+			shared::type_buffer & v_tx,
 			LPU237_type_callback fun_wait,
 			void *p_parameter_for_fun_wait,
 			bool b_need_rx = true,
@@ -130,7 +122,7 @@ private:
 	bool _job_is_empty();
 
 	bool _create_result( int n_index, type_mode mode );
-	bool _set_result( int n_index, type_result_fun result_fun, const type_buffer & v_rx );
+	bool _set_result( int n_index, shared::type_result_fun result_fun, const shared::type_buffer & v_rx );
 	bool _delete_result( int n_index );
 
 	void _save_job_item( const type_job_item & item
@@ -139,11 +131,11 @@ private:
 
 	void _notify_result(
 			const type_job_item & item,
-			type_result_fun result_fun,
-			const type_buffer & v_rx
+			shared::type_result_fun result_fun,
+			const shared::type_buffer & v_rx
 			);
 	void _notify_result(
-			type_result_fun result_fun
+			shared::type_result_fun result_fun
 			);
 
 private:

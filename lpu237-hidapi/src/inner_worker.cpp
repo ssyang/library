@@ -222,8 +222,8 @@ bool inner_worker::_job_process()
 			//cancel current job
 			m_cur_job.b_process = false;
 			if( m_cur_job.ptr_rx == nullptr )
-				m_cur_job.ptr_rx = type_ptr_buffer( new type_buffer(0));
-			_notify_result( result_fun_cancel );
+				m_cur_job.ptr_rx = shared::type_ptr_buffer( new shared::type_buffer(0));
+			_notify_result( shared::result_fun_cancel );
 		}
 		//
 		type_job_item item;
@@ -243,7 +243,7 @@ bool inner_worker::_job_process()
 				_save_job_item( item );
 			else{
 				//cancel case
-				_notify_result( item, result_fun_success, type_buffer(0) );
+				_notify_result( item, shared::result_fun_success, shared::type_buffer(0) );
 			}
 			continue;
 		}
@@ -252,7 +252,7 @@ bool inner_worker::_job_process()
 				_save_job_item( item );
 			else{
 				//cancel case
-				_notify_result( item, result_fun_success, type_buffer(0) );
+				_notify_result( item, shared::result_fun_success, shared::type_buffer(0) );
 			}
 			continue;
 		}
@@ -261,7 +261,7 @@ bool inner_worker::_job_process()
 				_save_job_item( item );
 			else{
 				//cancel case
-				_notify_result( item, result_fun_success, type_buffer(0) );
+				_notify_result( item, shared::result_fun_success, shared::type_buffer(0) );
 			}
 			continue;
 		}
@@ -270,18 +270,18 @@ bool inner_worker::_job_process()
 		do{
 			b_tx_continue = false;
 			//
-			type_result_fun result_fun = m_fun_tx( item.h_dev, item.ptr_tx, item.mode );
+			shared::type_result_fun result_fun = m_fun_tx( item.h_dev, item.ptr_tx, item.mode );
 			switch( result_fun ){
-			case result_fun_success:
+			case shared::result_fun_success:
 				if( item.b_rx ){
 					_save_job_item( item );
 					break;
 				}
-			case result_fun_error:
-			case result_fun_cancel:
-				_notify_result( item, result_fun, type_buffer(0) );
+			case shared::result_fun_error:
+			case shared::result_fun_cancel:
+				_notify_result( item, result_fun, shared::type_buffer(0) );
 				break;
-			case result_fun_ing:
+			case shared::result_fun_ing:
 				b_tx_continue = true;
 				break;
 			default:
@@ -299,8 +299,8 @@ bool inner_worker::_job_process()
 bool inner_worker::_idle_process()
 {
 	bool b_continue_run = true;
-	type_result_fun result_fun = result_fun_success;
-	static type_ptr_buffer ptr_bump(nullptr);
+	shared::type_result_fun result_fun = shared::result_fun_success;
+	static shared::type_ptr_buffer ptr_bump(nullptr);
 
 	do{
 		if( m_fun_rx == 0 )
@@ -318,15 +318,15 @@ bool inner_worker::_idle_process()
 		m_cur_job.b_process = false;//stop idle process
 
 		switch( result_fun ){
-		case result_fun_error:
+		case shared::result_fun_error:
 			m_cur_job.ptr_rx = nullptr;
-		case result_fun_cancel:
-		case result_fun_success:
+		case shared::result_fun_cancel:
+		case shared::result_fun_success:
 			if( m_cur_job.ptr_rx == nullptr )
-				m_cur_job.ptr_rx = type_ptr_buffer( new type_buffer(0) );
+				m_cur_job.ptr_rx = shared::type_ptr_buffer( new shared::type_buffer(0) );
 			_notify_result( result_fun  );
 			break;
-		case result_fun_ing:
+		case shared::result_fun_ing:
 			m_cur_job.b_process = true;	//continue idle process.
 			break;
 		default:
@@ -354,7 +354,7 @@ bool inner_worker::_create_result( int n_index,type_mode mode )
 		//
 		type_job_result result =
 		{
-				result_fun_ing
+				shared::result_fun_ing
 				, nullptr
 				, type_ptr_event( new inner_event(true,false) )
 				, mode
@@ -367,7 +367,7 @@ bool inner_worker::_create_result( int n_index,type_mode mode )
 	return b_result;
 }
 
-bool inner_worker::_set_result( int n_index, type_result_fun result_fun, const type_buffer & v_rx )
+bool inner_worker::_set_result( int n_index, shared::type_result_fun result_fun, const shared::type_buffer & v_rx )
 {
 	bool b_result = false;
 
@@ -381,7 +381,7 @@ bool inner_worker::_set_result( int n_index, type_result_fun result_fun, const t
 			continue;//not found
 		//
 		it->second.result_fun = result_fun;
-		it->second.ptr_rx = type_ptr_buffer( new type_buffer(v_rx) );
+		it->second.ptr_rx = shared::type_ptr_buffer( new shared::type_buffer(v_rx) );
 		//
 		b_result = true;
 	}while(0);
@@ -412,7 +412,7 @@ bool inner_worker::_delete_result( int n_index )
 
 int inner_worker::push_job(
 		void *h_dev,
-		type_buffer & v_tx,
+		shared::type_buffer & v_tx,
 		LPU237_type_callback fun_wait,
 		void *p_parameter_for_fun_wait,
 		bool b_need_rx, /*= true*/
@@ -425,7 +425,7 @@ int inner_worker::push_job(
 	do{
 		type_job_item item = {
 				h_dev,
-				type_ptr_buffer( new type_buffer(v_tx) ),
+				shared::type_ptr_buffer( new shared::type_buffer(v_tx) ),
 				b_need_rx,
 				b_pump_rx,
 				mode,
@@ -540,14 +540,14 @@ void inner_worker::_save_job_item(
 		if( item.ptr_tx->size() == 0 )
 			continue;
 		//deep copy tx data.
-		m_cur_job.ptr_tx = type_ptr_buffer( new type_buffer(begin(*item.ptr_tx),end(*item.ptr_tx)) );
+		m_cur_job.ptr_tx = shared::type_ptr_buffer( new shared::type_buffer(begin(*item.ptr_tx),end(*item.ptr_tx)) );
 	}while(0);
 }
 
 void inner_worker::_notify_result(
 		const type_job_item & item,
-		type_result_fun result_fun,
-		const type_buffer & v_rx
+		shared::type_result_fun result_fun,
+		const shared::type_buffer & v_rx
 		)
 {
 	do{
@@ -568,7 +568,7 @@ void inner_worker::_notify_result(
 	}while(0);
 }
 
-void inner_worker::_notify_result( type_result_fun result_fun )
+void inner_worker::_notify_result( shared::type_result_fun result_fun )
 {
 	do{
 		if( !_set_result( m_cur_job.n_index, result_fun, *(m_cur_job.ptr_rx) ) ){

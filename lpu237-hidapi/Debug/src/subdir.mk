@@ -4,18 +4,21 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/dev_lpu237.cpp \
 ../src/inner_event.cpp \
 ../src/inner_worker.cpp \
 ../src/log_util.cpp \
 ../src/lpu237-hidapi.cpp 
 
 OBJS += \
+./src/dev_lpu237.o \
 ./src/inner_event.o \
 ./src/inner_worker.o \
 ./src/log_util.o \
 ./src/lpu237-hidapi.o 
 
 CPP_DEPS += \
+./src/dev_lpu237.d \
 ./src/inner_event.d \
 ./src/inner_worker.d \
 ./src/log_util.d \
