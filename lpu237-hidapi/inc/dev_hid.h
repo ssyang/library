@@ -86,6 +86,9 @@ public:
 
 public:
 	virtual const string & get_class_name()=0;
+	virtual int get_vid()=0;
+	virtual int get_pid()=0;
+	virtual int get_inf()=0;
 
 public:
 	dev_hid()
