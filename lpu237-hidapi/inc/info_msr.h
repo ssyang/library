@@ -7,9 +7,6 @@
 #if !defined( _INFO_MSR_HEADER_201007260001_ )
 #define _INFO_MSR_HEADER_201007260001_
 
-#include "compiler.h"
-#include "config/cfg_msrlib.h"
-
 
 #define	MSROBJ_INFO_DEF_TAG_SIZE			14	//the Tag  size
 
@@ -28,14 +25,12 @@
 
 ////////////////////////////////
 //determine MSROBJ_INFO_NUM.
-#if( (CONF_MSROBJ_NUMBER>3) || (CONF_MSROBJ_NUMBER<1) )
-	#error Error msr obejct is >1 and < 4.
-#else
-	#define	MSROBJ_INFO_NUM			CONF_MSROBJ_NUMBER	//msr object number
-#endif
+#define	CONF_MSROBJ_NUMBER		3
+#define	MSROBJ_INFO_NUM			CONF_MSROBJ_NUMBER	//msr object number
 
 ////////////////////////////////
 //determine MSR_OBJ_ALL_RAW_BUF_SIZE.
+#define	CONF_MSROBJ_RAW_BUFFER_SIZE		0	//automatic
 #ifndef CONF_MSROBJ_RAW_BUFFER_SIZE
 	#error you must define CONF_MSROBJ_RAW_BUFFER_SIZE.
 #elif( CONF_MSROBJ_RAW_BUFFER_SIZE==0 )		//automatic
@@ -55,6 +50,7 @@
 
 ////////////////////////////////
 //determine MSROBJ_INFO_COMB_NUM.
+#define	CONF_MSROBJ_NUMBER_COMB		3
 #if( CONF_MSROBJ_NUMBER_COMB<1 )
 	#error msr obejct combination number is greater then equal one.
 #elif( CONF_MSROBJ_NUMBER_COMB>4 )
@@ -64,18 +60,14 @@
 #endif
 
 
-#ifdef	WIN32
-#pragma pack(push,1)
-#endif	//WIN32
-
 typedef struct tagMSR_MAP_TABLE{
 
 	//the index of key Mapping table' l'st index gASCToHIDKeyMap or gASCToPS2KeyMap
-	UINT32 nMappingTableIndex;
+	unsigned long nMappingTableIndex;
 
-	UINT32 nNumMapTableItem;	//the numnber of pMappingTable' item
+	unsigned long nNumMapTableItem;	//the numnber of pMappingTable' item
 									//default: nNumMapTableItem[x] = 0
-}COMPILER_ATTRIBUTE_BYTE_ALIGNMENT MSR_MAP_TABLE, *PMSR_MAP_TABLE,*LPMSR_MAP_TABLE;
+}__attribute__ ((packed)) MSR_MAP_TABLE, *PMSR_MAP_TABLE,*LPMSR_MAP_TABLE;
 
 //global tag , pre / post and private pre /postfix
 typedef struct tagMSR_TAG{
@@ -88,7 +80,7 @@ typedef struct tagMSR_TAG{
 	//sTag[2n+1] - USB HID key(0<=n<=MSROBJ_INFO_DEF_TAG_SIZE/2)
 	//default:  all zeros
 
-}COMPILER_ATTRIBUTE_BYTE_ALIGNMENT MSR_TAG, *PMSR_TAG, *LPMSR_TAG;
+}__attribute__ ((packed)) MSR_TAG, *PMSR_TAG, *LPMSR_TAG;
 
 //this structure is msr object information
 typedef struct tagINFO_MSR_OBJ{
@@ -150,7 +142,7 @@ typedef struct tagINFO_MSR_OBJ{
 									//16(188):reading direction
 									//default:	RDirect[x]=RDirectBoth
 
-	UINT32 nBufSize;
+	unsigned long nBufSize;
 									//4(204): raw data buffer size.
 									//default:	cBufSize=C_MSR_ISO2_RAW_BUF_SIZE
 
@@ -180,7 +172,7 @@ typedef struct tagINFO_MSR_OBJ{
 	//keyboard mapping table
 	MSR_MAP_TABLE KeyMap[MSROBJ_INFO_COMB_NUM];
 
-}COMPILER_ATTRIBUTE_BYTE_ALIGNMENT INFO_MSR_OBJ, *PINFO_MSR_OBJ,*LPINFO_MSR_OBJ;
+}__attribute__ ((packed)) INFO_MSR_OBJ, *PINFO_MSR_OBJ,*LPINFO_MSR_OBJ;
 
 
 ////////////////////////////////////////////////////
@@ -188,25 +180,21 @@ typedef struct tagINFO_MSR_OBJ{
 typedef struct tagCONTAINER_INFO_MSR_OBJ{
 
 	// Info msr object' pointer arrary
-#ifdef	_WIN64
-	UINT32 pInfoMsrObj[MSROBJ_INFO_NUM];
-#else
 	PINFO_MSR_OBJ pInfoMsrObj[MSROBJ_INFO_NUM];
-#endif	//_WIN64
 
-	UINT32 nCpdSysTickMin;	//the minimum system tick value of CPD low status
-	UINT32 nCpdSysTickMax;	//the maximum system tick value of CPD low status
+	unsigned long nCpdSysTickMin;	//the minimum system tick value of CPD low status
+	unsigned long nCpdSysTickMax;	//the maximum system tick value of CPD low status
 
 	// Global pre/postfix sending condition.
-	UINT32 nGlobalTagCondition;
+	unsigned long nGlobalTagCondition;
 							//default:	0 - any track is good & good track' length of data. > 0
 							//			1 - all track is good & any track' length of data. > 0
 
 	//the number of contained info object.
-	UINT32 nNumItem;	//nNumItem = MSROBJ_INFO_NUM
+	unsigned long nNumItem;	//nNumItem = MSROBJ_INFO_NUM
 
 	//the processing order of info object in InfoMsrObj members.
-	UINT32 nOrderObject[MSROBJ_INFO_NUM];
+	unsigned long nOrderObject[MSROBJ_INFO_NUM];
 							//default:	OrderObject[0] = 0
 							//			OrderObject[1] = 1
 							//			OrderObject[2] = 2
@@ -229,7 +217,7 @@ typedef struct tagCONTAINER_INFO_MSR_OBJ{
 	MSR_TAG GlobalPrefix;
 	MSR_TAG GlobalPostfix;
 
-}COMPILER_ATTRIBUTE_BYTE_ALIGNMENT CONTAINER_INFO_MSR_OBJ, *PCONTAINER_INFO_MSR_OBJ,*LPCONTAINER_INFO_MSR_OBJ;
+}__attribute__ ((packed)) CONTAINER_INFO_MSR_OBJ, *PCONTAINER_INFO_MSR_OBJ,*LPCONTAINER_INFO_MSR_OBJ;
 
 ///////////////////////////////////////////////////
 // old part
@@ -239,9 +227,9 @@ typedef struct tagMSR_MAP_TABLE_OLD{
 	const unsigned char *pMappingTable;
 									//default:  pMappingTable[x] = NULL
 
-	UINT32 nNumMapTableItem;	//the numnber of pMappingTable' item
+	unsigned long nNumMapTableItem;	//the numnber of pMappingTable' item
 									//default: nNumMapTableItem[x] = 0
-}COMPILER_ATTRIBUTE_BYTE_ALIGNMENT MSR_MAP_TABLE_OLD, *PMSR_MAP_TABLE_OLD,*LPMSR_MAP_TABLE_OLD;
+}__attribute__ ((packed)) MSR_MAP_TABLE_OLD, *PMSR_MAP_TABLE_OLD,*LPMSR_MAP_TABLE_OLD;
 
 
 //this structure is msr object information
@@ -304,7 +292,7 @@ typedef struct tagINFO_MSR_OBJ_OLD{
 									//16(188):reading direction
 									//default:	RDirect[x]=RDirectBoth
 
-	UINT32 nBufSize;
+	unsigned long nBufSize;
 									//4(204): raw data buffer size.
 									//default:	cBufSize=C_MSR_ISO2_RAW_BUF_SIZE
 
@@ -334,7 +322,7 @@ typedef struct tagINFO_MSR_OBJ_OLD{
 	//keyboard mapping table
 	MSR_MAP_TABLE_OLD KeyMap[MSROBJ_INFO_COMB_NUM];
 
-}COMPILER_ATTRIBUTE_BYTE_ALIGNMENT INFO_MSR_OBJ_OLD, *PINFO_MSR_OBJ_OLD,*LPINFO_MSR_OBJ_OLD;
+}__attribute__ ((packed)) INFO_MSR_OBJ_OLD, *PINFO_MSR_OBJ_OLD,*LPINFO_MSR_OBJ_OLD;
 
 
 ////////////////////////////////////////////////////
@@ -342,25 +330,21 @@ typedef struct tagINFO_MSR_OBJ_OLD{
 typedef struct tagCONTAINER_INFO_MSR_OBJ_OLD{
 
 	// Info msr object' pointer arrary
-#ifdef	_WIN64
-	UINT32 pInfoMsrObj[MSROBJ_INFO_NUM];
-#else
 	PINFO_MSR_OBJ pInfoMsrObj[MSROBJ_INFO_NUM];
-#endif	//_WIN64
 
-	UINT32 nCpdSysTickMin;	//the minimum system tick value of CPD low status
-	UINT32 nCpdSysTickMax;	//the maximum system tick value of CPD low status
+	unsigned long nCpdSysTickMin;	//the minimum system tick value of CPD low status
+	unsigned long nCpdSysTickMax;	//the maximum system tick value of CPD low status
 
 	// Global pre/postfix sending condition.
-	UINT32 nGlobalTagCondition;
+	unsigned long nGlobalTagCondition;
 							//default:	0 - any track is good & good track' length of data. > 0
 							//			1 - all track is good & any track' length of data. > 0
 
 	//the number of contained info object.
-	UINT32 nNumItem;	//nNumItem = MSROBJ_INFO_NUM
+	unsigned long nNumItem;	//nNumItem = MSROBJ_INFO_NUM
 
 	//the processing order of info object in InfoMsrObj members.
-	UINT32 nOrderObject[MSROBJ_INFO_NUM];
+	unsigned long nOrderObject[MSROBJ_INFO_NUM];
 							//default:	OrderObject[0] = 0
 							//			OrderObject[1] = 1
 							//			OrderObject[2] = 2
@@ -383,11 +367,7 @@ typedef struct tagCONTAINER_INFO_MSR_OBJ_OLD{
 	MSR_TAG GlobalPrefix;
 	MSR_TAG GlobalPostfix;
 
-}COMPILER_ATTRIBUTE_BYTE_ALIGNMENT CONTAINER_INFO_MSR_OBJ_OLD, *PCONTAINER_INFO_MSR_OBJ_OLD,*LPCONTAINER_INFO_MSR_OBJ_OLD;
-
-#ifdef	WIN32
-#pragma pack(pop)
-#endif	//WIN32
+}__attribute__ ((packed)) CONTAINER_INFO_MSR_OBJ_OLD, *PCONTAINER_INFO_MSR_OBJ_OLD,*LPCONTAINER_INFO_MSR_OBJ_OLD;
 
 
 #endif	//_INFO_MSR_HEADER_201007260001_

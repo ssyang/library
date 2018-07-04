@@ -326,43 +326,168 @@ public:
 	string get_global_prepostfix_send_condition_string();
 
 	bool df_bypass_uart( dev_hid::type_handle h_dev, const shared::type_buffer & v_tx_data, shared::type_buffer & v_rx_data );
-	bool df_debug_interface();
-	bool df_goto_bootloader();
-	bool df_enter_config();
-	bool df_leave_config();
-	bool df_apply_config();
-	bool df_enter_opos();
-	bool df_leave_opos();
+	bool df_debug_interface(dev_hid::type_handle h_dev);
+	bool df_goto_bootloader(dev_hid::type_handle h_dev);
+	bool df_enter_config(dev_hid::type_handle h_dev);
+	bool df_leave_config(dev_hid::type_handle h_dev);
+	bool df_apply_config(dev_hid::type_handle h_dev);
+	bool df_enter_opos(dev_hid::type_handle h_dev);
+	bool df_leave_opos(dev_hid::type_handle h_dev);
 
-	bool df_get_system_parameters();
+	bool df_get_system_parameters(dev_hid::type_handle h_dev);
 
-	bool df_set_system_parameters();
+	bool df_set_system_parameters(dev_hid::type_handle h_dev);
 
-	bool df_set_interface();
-	bool df_set_language();
-	bool df_set_buzzer();
-	bool df_set_enable_track();
+	bool df_set_interface(dev_hid::type_handle h_dev);
+	bool df_set_language(dev_hid::type_handle h_dev);
+	bool df_set_buzzer(dev_hid::type_handle h_dev);
+	bool df_set_enable_track(dev_hid::type_handle h_dev);
 
-	bool df_set_global_prefix();
-	bool df_set_global_postfix();
-	bool df_set_private_prefix();
-	bool df_set_private_postfix();
+	bool df_set_global_prefix(dev_hid::type_handle h_dev);
+	bool df_set_global_postfix(dev_hid::type_handle h_dev);
+	bool df_set_private_prefix(dev_hid::type_handle h_dev);
+	bool df_set_private_postfix(dev_hid::type_handle h_dev);
 
-	bool df_set_prefix_ibutton();
-	bool df_set_postfix_ibutton();
+	bool df_set_prefix_ibutton(dev_hid::type_handle h_dev);
+	bool df_set_postfix_ibutton(dev_hid::type_handle h_dev);
 
-	bool df_set_prefix_uart();
-	bool df_set_postfix_uart();
+	bool df_set_prefix_uart(dev_hid::type_handle h_dev);
+	bool df_set_postfix_uart(dev_hid::type_handle h_dev);
 
-	bool df_set_global_prepostfix_send_condition();
+	bool df_set_global_prepostfix_send_condition(dev_hid::type_handle h_dev);
 
-	bool df_set_enable_track( type_msr_track_number track );
-	bool df_set_private_prefix( type_msr_track_number track );
-	bool df_set_private_postfix( type_msr_track_number track );
+	bool df_set_enable_track( dev_hid::type_handle h_dev, type_msr_track_number track );
+	bool df_set_private_prefix( dev_hid::type_handle h_dev, type_msr_track_number track );
+	bool df_set_private_postfix( dev_hid::type_handle h_dev, type_msr_track_number track );
 
-	bool df_mmd100_raw( type_msr_track_number track );
+	bool df_mmd100_raw( dev_hid::type_handle h_dev, const shared::type_buffer & v_tx, shared::type_buffer & v_rx );
+
+	//setter
+	dev_lpu237 & set_global_prepostfix_send_condition( bool b_all_track_good )
+	{
+		m_parameter.set_global_preposfix_send_condition(b_all_track_good);
+		return *this;
+	}
+	dev_lpu237 & set_language( type_language_map_index lang_index )
+	{
+		m_parameter.set_language_index( lang_index );
+		return *this;
+	}
+	dev_lpu237 & set_buzzer_frequency( int n_freq = const_default_buzzer_frequency )
+	{
+		m_parameter.set_buzzer_frequency( n_freq );
+		return *this;
+	}
+	dev_lpu237 & set_enable_track( type_msr_track_number track, bool b_enable = true )
+	{
+		m_parameter.set_enable_track( track, b_enable );
+		return *this;
+	}
+	dev_lpu237 & set_global_prefix( const type_tag & tag )
+	{
+		m_parameter.set_global_prefix( tag );
+		return *this;
+	}
+	dev_lpu237 & set_global_postfix( const type_tag & tag )
+	{
+		m_parameter.set_global_postfix( tag );
+		return *this;
+	}
+	dev_lpu237 & set_private_prefix( type_msr_track_number track, const type_tag & tag )
+	{
+		m_parameter.set_private_prefix( track, tag );
+		return *this;
+	}
+	dev_lpu237 & set_private_postfix( type_msr_track_number track, const type_tag & tag )
+	{
+		m_parameter.set_private_postfix( track, tag );
+		return *this;
+	}
+	dev_lpu237 & set_ibutton_prefix( const type_tag & tag )
+	{
+		m_parameter.set_prefix_ibutton( tag );
+		return *this;
+	}
+	dev_lpu237 & set_ibutton_postfix( const type_tag & tag )
+	{
+		m_parameter.set_postfix_ibutton( tag );
+		return *this;
+	}
+	dev_lpu237 & set_uart_prefix( const type_tag & tag )
+	{
+		m_parameter.set_prefix_uart( tag );
+		return *this;
+	}
+	dev_lpu237 & set_uart_postfix( const type_tag & tag )
+	{
+		m_parameter.set_postfix_uart( tag );
+		return *this;
+	}
+	dev_lpu237 & set_parameters( const config & c )
+	{
+		m_parameter = c;
+		return *this;
+	}
+
+	//getter
+	bool get_global_prepostfix_send_condition(){	return m_parameter.get_global_preposfix_send_condition();	}
+	type_name get_name(){	return m_name;	}
+	inner_version get_version(){	return m_version;	}
+	inner_version get_structure_version(){	return m_structure_version;	}
+	unsigned long get_system_type(){	return m_dw_system_type;	}
+	type_bl get_bootloader_type(){	return m_bootloader_type;	}
+	type_interface get_interface(){	return m_parameter.get_interface();	}
+	type_language_map_index get_language_map_index(){	return m_parameter.get_language_map_index();	}
+	int get_buzzer_frequency(){	return m_parameter.get_buzzer_frequency();	}
+	int get_msd_bootloader_runtime(){	return m_n_msd_run_time;	}
+	bool get_enable_track( type_msr_track_number track ){	return m_parameter.get_enable_tack(track);	}
+
+	type_tag get_global_prefix(){	return m_parameter.get_global_prefix();	}
+	type_tag get_global_postfix(){	return m_parameter.get_global_postfix();	}
+	type_tag get_private_prefix( type_msr_track_number track ){	return m_parameter.get_private_prefix(track);	}
+	type_tag get_private_postfix( type_msr_track_number track ){	return m_parameter.get_private_postfix(track);	}
+
+	type_tag get_prefix_ibutton(){	return m_parameter.get_prefix_ibutton();	}
+	type_tag get_postfix_ibutton(){	return m_parameter.get_postfix_ibutton();	}
+
+	type_tag get_prefix_uart(){	return m_parameter.get_prefix_uart();	}
+	type_tag get_postfix_uart(){	return m_parameter.get_postfix_uart();	}
 
 private:
+
+	bool df_get_global_prepostfix_send_condition( dev_hid::type_handle h_dev );
+	bool df_get_name( dev_hid::type_handle h_dev );
+	bool df_get_uid( dev_hid::type_handle h_dev );
+	bool df_get_version_and_system_type( dev_hid::type_handle h_dev );
+	bool df_get_structure_version( dev_hid::type_handle h_dev );
+	bool df_get_interface( dev_hid::type_handle h_dev );
+	bool df_get_language( dev_hid::type_handle h_dev );
+	bool df_get_buzzer( dev_hid::type_handle h_dev );
+	bool df_get_msd_runtime( dev_hid::type_handle h_dev );
+	bool df_get_enable_track( dev_hid::type_handle h_dev );
+	bool df_get_global_prefix( dev_hid::type_handle h_dev );
+	bool df_get_global_postfix( dev_hid::type_handle h_dev );
+	bool df_get_private_prefix( dev_hid::type_handle h_dev );
+	bool df_get_private_postfix( dev_hid::type_handle h_dev );
+
+	bool df_get_prefix_ibutton( dev_hid::type_handle h_dev );
+	bool df_get_postfix_ibutton( dev_hid::type_handle h_dev );
+	bool df_get_prefix_uart( dev_hid::type_handle h_dev );
+	bool df_get_postfix_uart( dev_hid::type_handle h_dev );
+
+	bool df_get_version( dev_hid::type_handle h_dev );
+
+	bool df_get_enable_track( type_msr_track_number track );
+	bool df_get_private_prefix( type_msr_track_number track );
+	bool df_get_private_postfix( type_msr_track_number track );
+
+	bool df_get(
+			dev_hid::type_handle h_dev
+			, type_msr_host_packet & rsp
+			, unsigned long dw_offset
+			, unsigned long dw_size );
+
+
 	bool send_request(
 			dev_hid::type_handle h_dev
 			, type_msr_cmd cmd
@@ -377,6 +502,17 @@ private:
 			, const type_msr_host_packet & req
 			, type_msr_host_packet *p_rsp = NULL
 			);
+
+	bool df_set(
+			dev_hid::type_handle h_dev
+			, type_msr_host_packet & rsp
+			, unsigned long dw_offset
+			, unsigned long dw_size
+			, unsigned char *ps_data );
+
+	bool df_set_key_map_table( dev_hid::type_handle h_dev );
+
+	bool get_tag_from_tag_type( MSR_TAG & out_tag, const type_tag & v_in_tag );
 
 private:
 	type_name m_name;
