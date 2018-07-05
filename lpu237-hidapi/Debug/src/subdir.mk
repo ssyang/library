@@ -4,6 +4,7 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 CPP_SRCS += \
+../src/KBMapTable.cpp \
 ../src/dev_lpu237.cpp \
 ../src/inner_event.cpp \
 ../src/inner_worker.cpp \
@@ -11,6 +12,7 @@ CPP_SRCS += \
 ../src/lpu237-hidapi.cpp 
 
 OBJS += \
+./src/KBMapTable.o \
 ./src/dev_lpu237.o \
 ./src/inner_event.o \
 ./src/inner_worker.o \
@@ -18,6 +20,7 @@ OBJS += \
 ./src/lpu237-hidapi.o 
 
 CPP_DEPS += \
+./src/KBMapTable.d \
 ./src/dev_lpu237.d \
 ./src/inner_event.d \
 ./src/inner_worker.d \

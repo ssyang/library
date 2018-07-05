@@ -17,6 +17,9 @@
 #define sizeofstructmember(s,m)		sizeof(((s *)0)->m)
 #endif	//sizeofstructmember
 
+extern unsigned char gASCToHIDKeyMap[HIDKEY_MAP_NUMBER][FOR_CVT_MAX_ASCII_CODE][2];
+extern unsigned char gASCToPS2KeyMap[PS2KEY_MAP_NUMBER][FOR_CVT_MAX_ASCII_CODE][2];
+
 const string & get_class_name()
 {
 	static string s_name("dev_lpu237");
@@ -186,7 +189,7 @@ string dev_lpu237::get_global_prepostfix_send_condition_string()
 	return s_condition;
 }
 
-bool dev_lpu237::send_request(
+bool dev_lpu237::_send_request(
 		dev_hid::type_handle h_dev
 		, type_msr_cmd cmd
 		, unsigned char c_sub
@@ -242,13 +245,13 @@ bool dev_lpu237::send_request(
 	return b_result;
 }
 
-bool dev_lpu237::send_request(
+bool dev_lpu237::_send_request(
 		dev_hid::type_handle h_dev
 		, const type_msr_host_packet & req
 		, type_msr_host_packet *p_rsp/* = NULL*/
 		)
 {
-	return send_request( h_dev, (type_msr_cmd)req.c_cmd, req.c_sub, (int)req.c_len, req.s_data ,(unsigned char *)p_rsp );
+	return _send_request( h_dev, (type_msr_cmd)req.c_cmd, req.c_sub, (int)req.c_len, req.s_data ,(unsigned char *)p_rsp );
 }
 
 bool dev_lpu237::df_bypass_uart(
@@ -283,7 +286,7 @@ bool dev_lpu237::df_bypass_uart(
 		memcpy(&v_tx[sizeof(unsigned long)],&dw_total,sizeof(unsigned long));
 
 		n_data = v_tx.size()-(sizeof(unsigned long)*2);
-		if( n_data > v_tx_data.size() )
+		if( n_data > (int)v_tx_data.size() )
 			n_data = v_tx_data.size();
 		memcpy(&v_tx[sizeof(unsigned long)*2],&v_tx_data[dw_offset],n_data);
 		n_tx = n_data + sizeof(unsigned long)*2;
@@ -404,37 +407,37 @@ bool dev_lpu237::df_bypass_uart(
 }
 bool dev_lpu237::df_debug_interface(dev_hid::type_handle h_dev)
 {
-	return send_request( h_dev, msr_cmd_deb_interface, 0,0,NULL);
+	return _send_request( h_dev, msr_cmd_deb_interface, 0,0,NULL);
 }
 
 bool dev_lpu237::df_goto_bootloader(dev_hid::type_handle h_dev)
 {
-	return send_request( h_dev, msr_cmd_goto_bootloader, 0,0,NULL);
+	return _send_request( h_dev, msr_cmd_goto_bootloader, 0,0,NULL);
 }
 
 bool dev_lpu237::df_enter_config(dev_hid::type_handle h_dev)
 {
-	return send_request( h_dev, msr_cmd_enter_cs, 0,0,NULL);
+	return _send_request( h_dev, msr_cmd_enter_cs, 0,0,NULL);
 }
 
 bool dev_lpu237::df_leave_config(dev_hid::type_handle h_dev)
 {
-	return send_request( h_dev, msr_cmd_leave_cs, 0,0,NULL);
+	return _send_request( h_dev, msr_cmd_leave_cs, 0,0,NULL);
 }
 
 bool dev_lpu237::df_apply_config(dev_hid::type_handle h_dev)
 {
-	return send_request( h_dev, msr_cmd_apply, 0,0,NULL);
+	return _send_request( h_dev, msr_cmd_apply, 0,0,NULL);
 }
 
 bool dev_lpu237::df_enter_opos(dev_hid::type_handle h_dev)
 {
-	return send_request( h_dev, msr_cmd_enter_opos, 0,0,NULL);
+	return _send_request( h_dev, msr_cmd_enter_opos, 0,0,NULL);
 }
 
 bool dev_lpu237::df_leave_opos(dev_hid::type_handle h_dev)
 {
-	return send_request( h_dev, msr_cmd_leave_opos, 0,0,NULL);
+	return _send_request( h_dev, msr_cmd_leave_opos, 0,0,NULL);
 }
 
 
@@ -443,7 +446,46 @@ bool dev_lpu237::df_get_system_parameters(dev_hid::type_handle h_dev)
 	bool b_result(false);
 
 	do{
-		//TODO.
+		if( !_df_get_global_prepostfix_send_condition( h_dev ) )
+			continue;
+		if( !_df_get_version_and_system_type( h_dev ) )
+			continue;
+		if( !_df_get_name( h_dev ) )
+			continue;
+		if( !_df_get_structure_version(h_dev))
+			continue;
+		if( !_df_get_uid(h_dev))
+			continue;
+		if( !_df_get_interface(h_dev))
+			continue;
+		if( !_df_get_language(h_dev))
+			continue;
+		if( !_df_get_buzzer(h_dev) )
+			continue;
+		if( !_df_get_msd_runtime(h_dev) )
+			continue;
+		if( !_df_get_enable_track(h_dev) )
+			continue;
+		if( !_df_get_global_prefix(h_dev) )
+			continue;
+		if( !_df_get_global_postfix(h_dev) )
+			continue;
+		if( !_df_get_private_prefix(h_dev) )
+			continue;
+		if( !_df_get_private_postfix(h_dev) )
+			continue;
+		//
+		inner_version v3001(3,0,0,1);
+		if( m_version >= v3001 ){
+			if( !_df_get_prefix_ibutton(h_dev) )
+				continue;
+			if( !_df_get_postfix_ibutton(h_dev) )
+				continue;
+			if( !_df_get_prefix_uart(h_dev) )
+				continue;
+			if( !_df_get_postfix_uart(h_dev) )
+				continue;
+		}
 
 		b_result = true;
 	}while(0);
@@ -456,14 +498,41 @@ bool dev_lpu237::df_set_system_parameters(dev_hid::type_handle h_dev)
 	bool b_result(false);
 
 	do{
-		//TODO.
+		if( !this->df_set_global_prepostfix_send_condition(h_dev) )
+			continue;
+		if( !this->df_set_interface(h_dev) )
+			continue;
+		if( !this->df_set_language(h_dev) )
+			continue;
+		if( !this->df_set_buzzer(h_dev) )
+			continue;
+		if( !this->df_set_enable_track(h_dev) )
+			continue;
+		if( !this->df_set_global_prefix(h_dev) )
+			continue;
+		if( !this->df_set_global_postfix(h_dev) )
+			continue;
+		if( !this->df_set_private_prefix(h_dev) )
+			continue;
+		if( !this->df_set_private_postfix(h_dev) )
+			continue;
+		if( !this->df_set_prefix_ibutton (h_dev) )
+			continue;
+		if( !this->df_set_postfix_ibutton(h_dev) )
+			continue;
+		if( !this->df_set_prefix_uart(h_dev) )
+			continue;
+		if( !this->df_set_postfix_uart(h_dev) )
+			continue;
+		if( !this->_df_set_key_map_table(h_dev) )
+			continue;
 
 		b_result = true;
 	}while(0);
 	return b_result;
 }
 
-bool dev_lpu237::df_set(
+bool dev_lpu237::_df_set(
 		dev_hid::type_handle h_dev
 		, type_msr_host_packet & rsp
 		, unsigned long dw_offset
@@ -484,13 +553,10 @@ bool dev_lpu237::df_set(
 	memcpy( &req.s_data[sizeof(dw_offset)], &dw_size, sizeof(dw_size) );
 	memcpy( &req.s_data[sizeof(dw_offset)+sizeof(dw_size)], ps_data, dw_size );
 
-	return send_request( h_dev, req, &rsp );
+	return _send_request( h_dev, req, &rsp );
 }
 
-extern unsigned char gASCToHIDKeyMap[][][2];
-extern unsigned char gASCToPS2KeyMap[][][2];
-
-bool dev_lpu237::df_set_key_map_table( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_set_key_map_table( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
@@ -506,41 +572,41 @@ bool dev_lpu237::df_set_key_map_table( dev_hid::type_handle h_dev )
 		unsigned char *ps_data(NULL);
 
 		//USB map
-		dw_offset = const_hid_keymap_address_offset;
+		dw_offset = _const_hid_keymap_address_offset;
 		dw_size = FOR_CVT_MAX_ASCII_CODE;
 		ps_data = (unsigned char*)(&gASCToHIDKeyMap[n_map_table_index][0][0]);
 
 		type_msr_host_packet rsp;
 
-		if( !df_set( h_dev, rsp, dw_offset, dw_size, ps_data ) )
+		if( !_df_set( h_dev, rsp, dw_offset, dw_size, ps_data ) )
 			continue;
 		if( rsp.c_sub != msr_rsp_good )
 			continue;
 		//
-		dw_offset = const_hid_keymap_address_offset+FOR_CVT_MAX_ASCII_CODE;
+		dw_offset = _const_hid_keymap_address_offset+FOR_CVT_MAX_ASCII_CODE;
 		dw_size = FOR_CVT_MAX_ASCII_CODE;
 		ps_data = (unsigned char*)(&gASCToHIDKeyMap[n_map_table_index][FOR_CVT_MAX_ASCII_CODE/2][0]);
 
-		if( !df_set( h_dev, rsp, dw_offset, dw_size, ps_data ) )
+		if( !_df_set( h_dev, rsp, dw_offset, dw_size, ps_data ) )
 			continue;
 		if( rsp.c_sub != msr_rsp_good )
 			continue;
 
 		//PS2 map
-		dw_offset = const_ps2_keymap_address_offset;
+		dw_offset = _const_ps2_keymap_address_offset;
 		dw_size = FOR_CVT_MAX_ASCII_CODE;
 		ps_data = (unsigned char*)(&gASCToPS2KeyMap[n_map_table_index][0][0]);
 
-		if( !df_set( h_dev, rsp, dw_offset, dw_size, ps_data ) )
+		if( !_df_set( h_dev, rsp, dw_offset, dw_size, ps_data ) )
 			continue;
 		if( rsp.c_sub != msr_rsp_good )
 			continue;
 		//
-		dw_offset = const_ps2_keymap_address_offset+FOR_CVT_MAX_ASCII_CODE;
+		dw_offset = _const_ps2_keymap_address_offset+FOR_CVT_MAX_ASCII_CODE;
 		dw_size = FOR_CVT_MAX_ASCII_CODE;
 		ps_data = (unsigned char*)(&gASCToPS2KeyMap[n_map_table_index][FOR_CVT_MAX_ASCII_CODE/2][0]);
 
-		if( !df_set( h_dev, rsp, dw_offset, dw_size, ps_data ) )
+		if( !_df_set( h_dev, rsp, dw_offset, dw_size, ps_data ) )
 			continue;
 		if( rsp.c_sub != msr_rsp_good )
 			continue;
@@ -557,7 +623,7 @@ bool dev_lpu237::df_set_interface(dev_hid::type_handle h_dev)
 	do{
 		type_msr_host_packet rsp;
 		unsigned char c_interface = (unsigned char)m_parameter.get_interface();
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO,Interface)
@@ -581,7 +647,7 @@ bool dev_lpu237::df_set_language(dev_hid::type_handle h_dev)
 	do{
 		type_msr_host_packet rsp;
 		unsigned long n_map_table_index = (unsigned long)m_parameter.get_language_map_index();
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO,ContainerInfoMsrObj.KeyMap.nMappingTableIndex)
@@ -592,7 +658,7 @@ bool dev_lpu237::df_set_language(dev_hid::type_handle h_dev)
 		if( rsp.c_sub != msr_rsp_good )
 			continue;
 		//
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO,InfoMsr[0].KeyMap[0].nMappingTableIndex)
@@ -603,7 +669,7 @@ bool dev_lpu237::df_set_language(dev_hid::type_handle h_dev)
 		if( rsp.c_sub != msr_rsp_good )
 			continue;
 		//
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO,InfoMsr[1].KeyMap[0].nMappingTableIndex)
@@ -614,7 +680,7 @@ bool dev_lpu237::df_set_language(dev_hid::type_handle h_dev)
 		if( rsp.c_sub != msr_rsp_good )
 			continue;
 		//
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO,InfoMsr[2].KeyMap[0].nMappingTableIndex)
@@ -625,7 +691,7 @@ bool dev_lpu237::df_set_language(dev_hid::type_handle h_dev)
 		if( rsp.c_sub != msr_rsp_good )
 			continue;
 		//
-		b_result = df_set_key_map_table( h_dev );
+		b_result = _df_set_key_map_table( h_dev );
 	}while(0);
 	return b_result;
 }
@@ -637,7 +703,7 @@ bool dev_lpu237::df_set_buzzer(dev_hid::type_handle h_dev)
 	do{
 		type_msr_host_packet rsp;
 		unsigned long dw_frquency = (unsigned long)m_parameter.get_buzzer_frequency();
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO,nBuzzerFrequency)
@@ -683,12 +749,12 @@ bool dev_lpu237::df_set_global_prefix(dev_hid::type_handle h_dev)
 	do{
 		MSR_TAG tag;
 
-		if( !get_tag_from_tag_type( tag, m_parameter.get_global_prefix() ) )
+		if( !_get_tag_from_tag_type( tag, m_parameter.get_global_prefix() ) )
 			continue;
 
 		type_msr_host_packet rsp;
 
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO,ContainerInfoMsrObj.GlobalPrefix)
@@ -712,12 +778,12 @@ bool dev_lpu237::df_set_global_postfix(dev_hid::type_handle h_dev)
 	do{
 		MSR_TAG tag;
 
-		if( !get_tag_from_tag_type( tag, m_parameter.get_global_postfix() ) )
+		if( !_get_tag_from_tag_type( tag, m_parameter.get_global_postfix() ) )
 			continue;
 
 		type_msr_host_packet rsp;
 
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO,ContainerInfoMsrObj.GlobalPostfix)
@@ -780,12 +846,12 @@ bool dev_lpu237::df_set_prefix_ibutton(dev_hid::type_handle h_dev)
 	do{
 		MSR_TAG tag;
 
-		if( !get_tag_from_tag_type( tag, m_parameter.get_prefix_ibutton() ) )
+		if( !_get_tag_from_tag_type( tag, m_parameter.get_prefix_ibutton() ) )
 			continue;
 
 		type_msr_host_packet rsp;
 
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO_STD,InfoIButton.GlobalPrefix)
@@ -809,12 +875,12 @@ bool dev_lpu237::df_set_postfix_ibutton(dev_hid::type_handle h_dev)
 	do{
 		MSR_TAG tag;
 
-		if( !get_tag_from_tag_type( tag, m_parameter.get_postfix_ibutton() ) )
+		if( !_get_tag_from_tag_type( tag, m_parameter.get_postfix_ibutton() ) )
 			continue;
 
 		type_msr_host_packet rsp;
 
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO_STD,InfoIButton.GlobalPostfix)
@@ -839,12 +905,12 @@ bool dev_lpu237::df_set_prefix_uart(dev_hid::type_handle h_dev)
 	do{
 		MSR_TAG tag;
 
-		if( !get_tag_from_tag_type( tag, m_parameter.get_prefix_uart() ) )
+		if( !_get_tag_from_tag_type( tag, m_parameter.get_prefix_uart() ) )
 			continue;
 
 		type_msr_host_packet rsp;
 
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO_STD,InfoUart.GlobalPrefix)
@@ -868,12 +934,12 @@ bool dev_lpu237::df_set_postfix_uart(dev_hid::type_handle h_dev)
 	do{
 		MSR_TAG tag;
 
-		if( !get_tag_from_tag_type( tag, m_parameter.get_postfix_uart() ) )
+		if( !_get_tag_from_tag_type( tag, m_parameter.get_postfix_uart() ) )
 			continue;
 
 		type_msr_host_packet rsp;
 
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO_STD,InfoUart.GlobalPostfix)
@@ -902,7 +968,7 @@ bool dev_lpu237::df_set_global_prepostfix_send_condition(dev_hid::type_handle h_
 		if( m_parameter.get_global_preposfix_send_condition() )
 			n_condition = 1;
 		//
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO,ContainerInfoMsrObj.nGlobalTagCondition)
@@ -954,7 +1020,7 @@ bool dev_lpu237::df_set_enable_track( dev_hid::type_handle h_dev, type_msr_track
 
 		type_msr_host_packet rsp;
 
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, dw_offset
@@ -978,7 +1044,7 @@ bool dev_lpu237::df_set_private_prefix( dev_hid::type_handle h_dev, type_msr_tra
 	do{
 		MSR_TAG tag;
 
-		if( !get_tag_from_tag_type( tag, m_parameter.get_private_prefix(track) ) )
+		if( !_get_tag_from_tag_type( tag, m_parameter.get_private_prefix(track) ) )
 			continue;
 
 		unsigned long dw_offset(0);
@@ -1003,7 +1069,7 @@ bool dev_lpu237::df_set_private_prefix( dev_hid::type_handle h_dev, type_msr_tra
 
 		type_msr_host_packet rsp;
 
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, dw_offset
@@ -1026,7 +1092,7 @@ bool dev_lpu237::df_set_private_postfix( dev_hid::type_handle h_dev, type_msr_tr
 	do{
 		MSR_TAG tag;
 
-		if( !get_tag_from_tag_type( tag, m_parameter.get_private_postfix(track) ) )
+		if( !_get_tag_from_tag_type( tag, m_parameter.get_private_postfix(track) ) )
 			continue;
 
 		unsigned long dw_offset(0);
@@ -1051,7 +1117,7 @@ bool dev_lpu237::df_set_private_postfix( dev_hid::type_handle h_dev, type_msr_tr
 
 		type_msr_host_packet rsp;
 
-		if( !df_set(
+		if( !_df_set(
 				h_dev
 				, rsp
 				, dw_offset
@@ -1075,7 +1141,7 @@ bool dev_lpu237::df_mmd100_raw( dev_hid::type_handle h_dev, const shared::type_b
 		v_rx.resize(256,0);
 		fill( begin(v_rx),end(v_rx), 0 );
 		//
-		if( !send_request( h_dev, msr_cmd_raw_mmd1000, 0, v_tx.size(), &v_tx[0], &v_rx[0]) )
+		if( !_send_request( h_dev, msr_cmd_raw_mmd1000, 0, v_tx.size(), &v_tx[0], &v_rx[0]) )
 			continue;
 		//
 		type_msr_host_packet *p_rsp = (type_msr_host_packet*)&v_rx[0];
@@ -1098,14 +1164,14 @@ bool dev_lpu237::df_mmd100_raw( dev_hid::type_handle h_dev, const shared::type_b
 	return b_result;
 }
 
-bool dev_lpu237::df_get_global_prepostfix_send_condition( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_global_prepostfix_send_condition( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
 		type_msr_host_packet rsp;
 
-		if( !df_get(
+		if( !_df_get(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO,ContainerInfoMsrObj.nGlobalTagCondition)
@@ -1129,7 +1195,7 @@ bool dev_lpu237::df_get_global_prepostfix_send_condition( dev_hid::type_handle h
 	return b_result;
 }
 
-bool dev_lpu237::df_get_name( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_name( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
@@ -1137,7 +1203,7 @@ bool dev_lpu237::df_get_name( dev_hid::type_handle h_dev )
 		type_msr_host_packet rsp;
 		m_name.assign(m_name.size(),0);
 
-		if( !df_get(
+		if( !_df_get(
 				h_dev
 				, rsp
 				, offsetof(SYSINFO,sName)
@@ -1148,7 +1214,7 @@ bool dev_lpu237::df_get_name( dev_hid::type_handle h_dev )
 		if( rsp.c_sub != msr_rsp_good )
 			continue;
 		//
-		for( int i = 0; i<(int)rsp.c_len && i<m_name.size(); i++ ){
+		for( int i = 0; i<(int)rsp.c_len && i<(int)m_name.size(); i++ ){
 
 			if( rsp.s_data[i] == 0 || rsp.s_data[i] == ' ')
 				break;
@@ -1162,11 +1228,27 @@ bool dev_lpu237::df_get_name( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_uid( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_uid( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		m_uid.clear();
+
+		type_msr_host_packet req,rsp;
+
+		memset( &req,0,sizeof(req));
+		memset( &rsp,0,sizeof(rsp));
+
+		req.c_cmd = msr_cmd_read_uid;
+
+		if( !_send_request( h_dev, req, &rsp ) )
+			continue;
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+
+		m_uid.resize(const_size_uid);
+		memcpy( &m_uid[0], rsp.s_data, const_size_uid );
 
 		b_result = true;
 	}while(0);
@@ -1174,11 +1256,91 @@ bool dev_lpu237::df_get_uid( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_version_and_system_type( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_version( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		m_bootloader_type = bl_none;
+		m_version.set(0,0,0,0);
+
+		type_msr_host_packet req,rsp;
+
+		memset( &req,0,sizeof(req));
+		memset( &rsp,0,sizeof(rsp));
+		//
+		req.c_cmd = msr_cmd_config;
+		req.c_sub = msr_sys_req_config_get;
+		req.c_len = sizeof(unsigned long)*2; //offset & size
+
+		unsigned long dw_offset = offsetof(SYSINFO,sSysVer);
+		unsigned long dw_size = sizeofstructmember(SYSINFO,sSysVer);
+		memcpy( &req.s_data[0], &dw_offset, sizeof(dw_offset) );
+		memcpy( &req.s_data[sizeof(dw_offset)], &dw_size, sizeof(dw_size) );
+
+		if( !_send_request( h_dev, req, &rsp ))
+			continue;
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+		//
+		m_version = inner_version(rsp.s_data[0], rsp.s_data[1], rsp.s_data[2], rsp.s_data[3] );
+
+		m_bootloader_type = bl_hid;
+		m_b_embedded_language_map = false;
+		b_result = true;
+	}while(0);
+
+	return b_result;
+}
+
+bool dev_lpu237::_df_get_version_and_system_type( dev_hid::type_handle h_dev )
+{
+	bool b_result(false);
+
+	do{
+		m_dw_system_type = ft_none;
+
+		if( !_df_get_version(h_dev) )
+			continue;
+		//
+		inner_version v3302(3,3,0,2);
+		if( m_version < v3302 ){
+			m_dw_system_type = ft_msr;
+			b_result = true;
+			continue;
+		}
+
+		type_msr_host_packet req,rsp;
+
+		memset( &req,0,sizeof(req));
+		memset( &rsp,0,sizeof(rsp));
+		//
+		req.c_cmd = msr_cmd_hw_is_standard;
+		if( !_send_request( h_dev, req, &rsp ))
+			continue;
+		if( rsp.c_sub != msr_rsp_good && rsp.c_sub != msr_rsp_good_negative )
+			continue;
+		if( rsp.c_sub == msr_rsp_good )
+			m_dw_system_type = ft_msr | ft_ibutton;
+		else
+			m_dw_system_type = ft_msr;
+		//
+		inner_version v3704(3,7,0,4);
+		if( m_version < v3704 ){
+			b_result = true;
+			continue;
+		}
+		//
+		memset( &req,0,sizeof(req));
+		memset( &rsp,0,sizeof(rsp));
+		//
+		req.c_cmd = msr_cmd_hw_is_only_ibutton;
+		if( !_send_request( h_dev, req, &rsp ))
+			continue;
+		if( rsp.c_sub != msr_rsp_good && rsp.c_sub != msr_rsp_good_negative )
+			continue;
+		if( rsp.c_sub == msr_rsp_good )
+			m_dw_system_type = ft_ibutton;
 
 		b_result = true;
 	}while(0);
@@ -1186,11 +1348,78 @@ bool dev_lpu237::df_get_version_and_system_type( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_structure_version( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_structure_version( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		m_structure_version.set(0,0,0,0);
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, offsetof(SYSINFO,sStrucVer)
+				, sizeofstructmember(SYSINFO,sStrucVer)
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+		m_structure_version.set( rsp.s_data[0], rsp.s_data[1], rsp.s_data[2], rsp.s_data[3] );
+		b_result = true;
+	}while(0);
+
+	return b_result;
+}
+
+bool dev_lpu237::_df_get_interface( dev_hid::type_handle h_dev )
+{
+	bool b_result(false);
+
+	do{
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, offsetof(SYSINFO,Interface)
+				, sizeofstructmember(SYSINFO,Interface)
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+
+		m_parameter.set_interface( (type_interface)rsp.s_data[0] );
+		b_result = true;
+	}while(0);
+
+	return b_result;
+}
+
+bool dev_lpu237::_df_get_language( dev_hid::type_handle h_dev )
+{
+	bool b_result(false);
+
+	do{
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, offsetof(SYSINFO,ContainerInfoMsrObj.KeyMap.nMappingTableIndex)
+				, sizeofstructmember(SYSINFO,ContainerInfoMsrObj.KeyMap.nMappingTableIndex)
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+
+		unsigned long n_lang(0);
+		memcpy( &n_lang, rsp.s_data, sizeof(n_lang));
+
+		m_parameter.set_language_index( (type_language_map_index)n_lang );
 
 		b_result = true;
 	}while(0);
@@ -1198,11 +1427,28 @@ bool dev_lpu237::df_get_structure_version( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_interface( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_buzzer( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, offsetof(SYSINFO,nBuzzerFrequency)
+				, sizeofstructmember(SYSINFO,nBuzzerFrequency)
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+
+		unsigned long n_buzzer(0);
+		memcpy( &n_buzzer, rsp.s_data, sizeof(n_buzzer));
+
+		m_parameter.set_buzzer_frequency( n_buzzer/10 );
 
 		b_result = true;
 	}while(0);
@@ -1210,11 +1456,28 @@ bool dev_lpu237::df_get_interface( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_language( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_msd_runtime( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, offsetof(SYSINFO,nBootRunTime)
+				, sizeofstructmember(SYSINFO,nBootRunTime)
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+
+		unsigned long n_runtime(0);
+		memcpy( &n_runtime, rsp.s_data, sizeof(n_runtime));
+
+		m_n_msd_run_time = n_runtime * 10;
 
 		b_result = true;
 	}while(0);
@@ -1222,11 +1485,54 @@ bool dev_lpu237::df_get_language( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_buzzer( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_enable_track( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		int i(0);
+
+		for( i=0; i<cont_the_number_of_tracks; i++ ){
+			if( !_df_get_enable_track( h_dev, (type_msr_track_number)i))
+				break;
+		}//end for
+
+		if( i<cont_the_number_of_tracks )
+			continue;
+		//
+		b_result = true;
+	}while(0);
+
+	return b_result;
+}
+
+bool dev_lpu237::_df_get_global_prefix( dev_hid::type_handle h_dev )
+{
+	bool b_result(false);
+
+	do{
+		m_parameter.set_global_prefix();//clear
+
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, offsetof(SYSINFO,ContainerInfoMsrObj.GlobalPrefix)
+				, sizeofstructmember(SYSINFO,ContainerInfoMsrObj.GlobalPrefix)
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+		//
+		PMSR_TAG p_tag = (PMSR_TAG)rsp.s_data;
+		type_tag v_tag;
+
+		if( !_get_tag_type_from_tag( v_tag,p_tag ) )
+			continue;
+
+		m_parameter.set_global_prefix( v_tag );
 
 		b_result = true;
 	}while(0);
@@ -1234,11 +1540,33 @@ bool dev_lpu237::df_get_buzzer( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_msd_runtime( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_global_postfix( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		m_parameter.set_global_postfix();//clear
+
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, offsetof(SYSINFO,ContainerInfoMsrObj.GlobalPostfix)
+				, sizeofstructmember(SYSINFO,ContainerInfoMsrObj.GlobalPostfix)
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+		//
+		PMSR_TAG p_tag = (PMSR_TAG)rsp.s_data;
+		type_tag v_tag;
+
+		if( !_get_tag_type_from_tag( v_tag,p_tag ) )
+			continue;
+
+		m_parameter.set_global_postfix( v_tag );
 
 		b_result = true;
 	}while(0);
@@ -1246,11 +1574,20 @@ bool dev_lpu237::df_get_msd_runtime( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_enable_track( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_private_prefix( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		int i(0);
+
+		for( i=0; i<cont_the_number_of_tracks; i++ ){
+			if( !_df_get_private_prefix( h_dev, (type_msr_track_number)i))
+				break;
+		}//end for
+
+		if( i<cont_the_number_of_tracks )
+			continue;
 
 		b_result = true;
 	}while(0);
@@ -1258,11 +1595,20 @@ bool dev_lpu237::df_get_enable_track( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_global_prefix( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_private_postfix( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		int i(0);
+
+		for( i=0; i<cont_the_number_of_tracks; i++ ){
+			if( !_df_get_private_postfix( h_dev, (type_msr_track_number)i))
+				break;
+		}//end for
+
+		if( i<cont_the_number_of_tracks )
+			continue;
 
 		b_result = true;
 	}while(0);
@@ -1270,11 +1616,33 @@ bool dev_lpu237::df_get_global_prefix( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_global_postfix( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_prefix_ibutton( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		m_parameter.set_prefix_ibutton();//clear
+
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, offsetof(SYSINFO_STD,InfoIButton.GlobalPrefix)
+				, sizeofstructmember(SYSINFO_STD,InfoIButton.GlobalPrefix)
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+		//
+		PMSR_TAG p_tag = (PMSR_TAG)rsp.s_data;
+		type_tag v_tag;
+
+		if( !_get_tag_type_from_tag( v_tag,p_tag ) )
+			continue;
+
+		m_parameter.set_prefix_ibutton( v_tag );
 
 		b_result = true;
 	}while(0);
@@ -1282,11 +1650,33 @@ bool dev_lpu237::df_get_global_postfix( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_private_prefix( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_postfix_ibutton( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		m_parameter.set_postfix_ibutton();//clear
+
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, offsetof(SYSINFO_STD,InfoIButton.GlobalPostfix)
+				, sizeofstructmember(SYSINFO_STD,InfoIButton.GlobalPostfix)
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+		//
+		PMSR_TAG p_tag = (PMSR_TAG)rsp.s_data;
+		type_tag v_tag;
+
+		if( !_get_tag_type_from_tag( v_tag,p_tag ) )
+			continue;
+
+		m_parameter.set_postfix_ibutton( v_tag );
 
 		b_result = true;
 	}while(0);
@@ -1294,11 +1684,33 @@ bool dev_lpu237::df_get_private_prefix( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_private_postfix( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_prefix_uart( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		m_parameter.set_prefix_uart();//clear
+
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, offsetof(SYSINFO_STD,InfoUart.GlobalPrefix)
+				, sizeofstructmember(SYSINFO_STD,InfoUart.GlobalPrefix)
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+		//
+		PMSR_TAG p_tag = (PMSR_TAG)rsp.s_data;
+		type_tag v_tag;
+
+		if( !_get_tag_type_from_tag( v_tag,p_tag ) )
+			continue;
+
+		m_parameter.set_prefix_uart( v_tag );
 
 		b_result = true;
 	}while(0);
@@ -1306,11 +1718,33 @@ bool dev_lpu237::df_get_private_postfix( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_prefix_ibutton( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_postfix_uart( dev_hid::type_handle h_dev )
 {
 	bool b_result(false);
 
 	do{
+		m_parameter.set_postfix_uart();//clear
+
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, offsetof(SYSINFO_STD,InfoUart.GlobalPostfix)
+				, sizeofstructmember(SYSINFO_STD,InfoUart.GlobalPostfix)
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+		//
+		PMSR_TAG p_tag = (PMSR_TAG)rsp.s_data;
+		type_tag v_tag;
+
+		if( !_get_tag_type_from_tag( v_tag,p_tag ) )
+			continue;
+
+		m_parameter.set_postfix_uart( v_tag );
 
 		b_result = true;
 	}while(0);
@@ -1318,11 +1752,49 @@ bool dev_lpu237::df_get_prefix_ibutton( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_postfix_ibutton( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_enable_track( dev_hid::type_handle h_dev, type_msr_track_number track )
 {
 	bool b_result(false);
 
 	do{
+		unsigned long dw_offset(0);
+		unsigned long dw_size(0);
+
+		switch(track){
+		case mt_iso1:
+			dw_offset = offsetof(SYSINFO,InfoMsr[0].cEnableTrack);
+			dw_size = sizeofstructmember(SYSINFO,InfoMsr[0].cEnableTrack);
+			break;
+		case mt_iso2:
+			dw_offset = offsetof(SYSINFO,InfoMsr[1].cEnableTrack);
+			dw_size = sizeofstructmember(SYSINFO,InfoMsr[1].cEnableTrack);
+			break;
+		case mt_iso3:
+			dw_offset = offsetof(SYSINFO,InfoMsr[2].cEnableTrack);
+			dw_size = sizeofstructmember(SYSINFO,InfoMsr[2].cEnableTrack);
+			break;
+		default:
+			continue;
+		}//end switch
+
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, dw_offset
+				, dw_size
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+
+		bool b_enable(false);
+		if( rsp.s_data[0] )
+			b_enable = true;
+
+		m_parameter.set_enable_track( track, b_enable );
 
 		b_result = true;
 	}while(0);
@@ -1330,11 +1802,50 @@ bool dev_lpu237::df_get_postfix_ibutton( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_prefix_uart( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_private_prefix( dev_hid::type_handle h_dev, type_msr_track_number track )
 {
 	bool b_result(false);
 
 	do{
+		unsigned long dw_offset(0);
+		unsigned long dw_size(0);
+
+		switch(track){
+		case mt_iso1:
+			dw_offset = offsetof(SYSINFO,InfoMsr[0].PrivatePrefix[0]);
+			dw_size = sizeofstructmember(SYSINFO,InfoMsr[0].PrivatePrefix[0]);
+			break;
+		case mt_iso2:
+			dw_offset = offsetof(SYSINFO,InfoMsr[1].PrivatePrefix[0]);
+			dw_size = sizeofstructmember(SYSINFO,InfoMsr[1].PrivatePrefix[0]);
+			break;
+		case mt_iso3:
+			dw_offset = offsetof(SYSINFO,InfoMsr[2].PrivatePrefix[0]);
+			dw_size = sizeofstructmember(SYSINFO,InfoMsr[2].PrivatePrefix[0]);
+			break;
+		default:
+			continue;
+		}//end switch
+
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, dw_offset
+				, dw_size
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+
+		PMSR_TAG p_tag = (PMSR_TAG)rsp.s_data;
+		type_tag v_tag;
+
+		if( !_get_tag_type_from_tag( v_tag,p_tag ) )
+			continue;
+		m_parameter.set_private_prefix(track, v_tag);
 
 		b_result = true;
 	}while(0);
@@ -1342,11 +1853,50 @@ bool dev_lpu237::df_get_prefix_uart( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_postfix_uart( dev_hid::type_handle h_dev )
+bool dev_lpu237::_df_get_private_postfix( dev_hid::type_handle h_dev, type_msr_track_number track )
 {
 	bool b_result(false);
 
 	do{
+		unsigned long dw_offset(0);
+		unsigned long dw_size(0);
+
+		switch(track){
+		case mt_iso1:
+			dw_offset = offsetof(SYSINFO,InfoMsr[0].PrivatePostfix[0]);
+			dw_size = sizeofstructmember(SYSINFO,InfoMsr[0].PrivatePostfix[0]);
+			break;
+		case mt_iso2:
+			dw_offset = offsetof(SYSINFO,InfoMsr[1].PrivatePostfix[0]);
+			dw_size = sizeofstructmember(SYSINFO,InfoMsr[1].PrivatePostfix[0]);
+			break;
+		case mt_iso3:
+			dw_offset = offsetof(SYSINFO,InfoMsr[2].PrivatePostfix[0]);
+			dw_size = sizeofstructmember(SYSINFO,InfoMsr[2].PrivatePostfix[0]);
+			break;
+		default:
+			continue;
+		}//end switch
+
+		type_msr_host_packet rsp;
+
+		if( !_df_get(
+				h_dev
+				, rsp
+				, dw_offset
+				, dw_size
+				) )
+			continue;
+		//here start.
+		if( rsp.c_sub != msr_rsp_good )
+			continue;
+
+		PMSR_TAG p_tag = (PMSR_TAG)rsp.s_data;
+		type_tag v_tag;
+
+		if( !_get_tag_type_from_tag( v_tag,p_tag ) )
+			continue;
+		m_parameter.set_private_postfix(track, v_tag);
 
 		b_result = true;
 	}while(0);
@@ -1354,55 +1904,7 @@ bool dev_lpu237::df_get_postfix_uart( dev_hid::type_handle h_dev )
 	return b_result;
 }
 
-bool dev_lpu237::df_get_version( dev_hid::type_handle h_dev )
-{
-	bool b_result(false);
-
-	do{
-
-		b_result = true;
-	}while(0);
-
-	return b_result;
-}
-
-bool dev_lpu237::df_get_enable_track( type_msr_track_number track )
-{
-	bool b_result(false);
-
-	do{
-
-		b_result = true;
-	}while(0);
-
-	return b_result;
-}
-
-bool dev_lpu237::df_get_private_prefix( type_msr_track_number track )
-{
-	bool b_result(false);
-
-	do{
-
-		b_result = true;
-	}while(0);
-
-	return b_result;
-}
-
-bool dev_lpu237::df_get_private_postfix( type_msr_track_number track )
-{
-	bool b_result(false);
-
-	do{
-
-		b_result = true;
-	}while(0);
-
-	return b_result;
-}
-
-bool dev_lpu237::df_get(
+bool dev_lpu237::_df_get(
 		dev_hid::type_handle h_dev
 		, type_msr_host_packet & rsp
 		, unsigned long dw_offset
@@ -1411,7 +1913,7 @@ bool dev_lpu237::df_get(
 	bool b_result(false);
 
 	do{
-		if( dw_size > (m_map_in_report_size[0]-MSR_SIZE_HOST_PACKET_HEADER) )
+		if( dw_size > (unsigned long)(m_map_in_report_size[0]-MSR_SIZE_HOST_PACKET_HEADER) )
 			continue;
 		//
 		type_msr_host_packet req;
@@ -1427,12 +1929,12 @@ bool dev_lpu237::df_get(
 		memcpy( &req.s_data[sizeof(dw_offset)], &dw_size, sizeof(dw_size) );
 
 
-		b_result= send_request( h_dev, req, &rsp );
+		b_result= _send_request( h_dev, req, &rsp );
 	}while(0);
 	return b_result;
 }
 
-bool dev_lpu237::get_tag_from_tag_type( MSR_TAG & out_tag, const type_tag & v_in_tag )
+bool dev_lpu237::_get_tag_from_tag_type( MSR_TAG & out_tag, const type_tag & v_in_tag )
 {
 	bool b_result(false);
 
@@ -1442,11 +1944,42 @@ bool dev_lpu237::get_tag_from_tag_type( MSR_TAG & out_tag, const type_tag & v_in
 		//
 		memset( &out_tag, 0, sizeof(out_tag) );
 
-		for_each( begin(v_in_tag),end(v_in_tag),[&](unsigned char tag){
-			out_tag[out_tag.cSize++] = tag;
+		for_each( begin(v_in_tag),end(v_in_tag),[&](unsigned char c_tag){
+			out_tag.sTag[out_tag.cSize++] = c_tag;
 		});
 
 		b_result = true;
+	}while(0);
+
+	return b_result;
+}
+
+bool dev_lpu237::_get_tag_type_from_tag( type_tag & v_out_tag, PMSR_TAG p_in_tag )
+{
+	bool b_result(false);
+
+	do{
+		v_out_tag.resize(0);
+
+		if( p_in_tag == NULL )
+			continue;
+		//
+		unsigned long n_map_index = m_parameter.get_language_map_index();
+
+		for( unsigned char i = 0; i<p_in_tag->cSize/2; i++ ){
+			if( p_in_tag->sTag[2*i] == 0xFF ){
+				//2*i+1 is ASCII code
+				v_out_tag.push_back( gASCToHIDKeyMap[n_map_index][p_in_tag->sTag[2*i+1]][0] );
+				v_out_tag.push_back( gASCToHIDKeyMap[n_map_index][p_in_tag->sTag[2*i+1]][1] );
+			}
+			else{
+				//2*i mode code, 2*i+1 is key code
+				v_out_tag.push_back(p_in_tag->sTag[2*i]);
+				v_out_tag.push_back(p_in_tag->sTag[2*i+1]);
+			}
+		}//end for
+
+		b_result= true;
 	}while(0);
 
 	return b_result;

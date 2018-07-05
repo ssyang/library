@@ -33,7 +33,9 @@ public:
 
 public:
 	enum{
-		cont_the_number_of_tracks = 3
+		cont_the_number_of_tracks = 3,
+		const_size_uid = 4*4,
+		const_default_buzzer_frequency = 2500
 	};
 
 	enum type_fun : unsigned long
@@ -88,6 +90,7 @@ public:
 
 	typedef	shared::type_buffer	type_tag;
 	typedef	shared::type_buffer	type_name;
+	typedef	shared::type_buffer	type_uid;
 	typedef	vector<bool>			type_vector_bool;
 
 	inline bool is_ibutton_reader( unsigned long dw_system_type )
@@ -105,15 +108,14 @@ public:
 
 private:
 	enum{
-		const_the_number_of_common_df = 12,
-		const_the_number_of_ibutton_uart_tag = 4,
-		const_hid_keymap_address_offset = 0x400,
-		const_ps2_keymap_address_offset = 0x800
+		_const_the_number_of_common_df = 12,
+		_const_the_number_of_ibutton_uart_tag = 4,
+		_const_hid_keymap_address_offset = 0x400,
+		_const_ps2_keymap_address_offset = 0x800
 	};
 	enum{
-		const_io_wait_timeout_slice = 2,
-		const_write_retry_count = 500,
-		const_default_buzzer_frequency = 2500
+		_const_io_wait_timeout_slice = 2,
+		_const_write_retry_count = 500,
 	};
 
 public:
@@ -455,40 +457,39 @@ public:
 
 private:
 
-	bool df_get_global_prepostfix_send_condition( dev_hid::type_handle h_dev );
-	bool df_get_name( dev_hid::type_handle h_dev );
-	bool df_get_uid( dev_hid::type_handle h_dev );
-	bool df_get_version_and_system_type( dev_hid::type_handle h_dev );
-	bool df_get_structure_version( dev_hid::type_handle h_dev );
-	bool df_get_interface( dev_hid::type_handle h_dev );
-	bool df_get_language( dev_hid::type_handle h_dev );
-	bool df_get_buzzer( dev_hid::type_handle h_dev );
-	bool df_get_msd_runtime( dev_hid::type_handle h_dev );
-	bool df_get_enable_track( dev_hid::type_handle h_dev );
-	bool df_get_global_prefix( dev_hid::type_handle h_dev );
-	bool df_get_global_postfix( dev_hid::type_handle h_dev );
-	bool df_get_private_prefix( dev_hid::type_handle h_dev );
-	bool df_get_private_postfix( dev_hid::type_handle h_dev );
+	bool _df_get_global_prepostfix_send_condition( dev_hid::type_handle h_dev );
+	bool _df_get_name( dev_hid::type_handle h_dev );
+	bool _df_get_uid( dev_hid::type_handle h_dev );
+	bool _df_get_version_and_system_type( dev_hid::type_handle h_dev );
+	bool _df_get_version( dev_hid::type_handle h_dev );
+	bool _df_get_structure_version( dev_hid::type_handle h_dev );
+	bool _df_get_interface( dev_hid::type_handle h_dev );
+	bool _df_get_language( dev_hid::type_handle h_dev );
+	bool _df_get_buzzer( dev_hid::type_handle h_dev );
+	bool _df_get_msd_runtime( dev_hid::type_handle h_dev );
+	bool _df_get_enable_track( dev_hid::type_handle h_dev );
+	bool _df_get_global_prefix( dev_hid::type_handle h_dev );
+	bool _df_get_global_postfix( dev_hid::type_handle h_dev );
+	bool _df_get_private_prefix( dev_hid::type_handle h_dev );
+	bool _df_get_private_postfix( dev_hid::type_handle h_dev );
 
-	bool df_get_prefix_ibutton( dev_hid::type_handle h_dev );
-	bool df_get_postfix_ibutton( dev_hid::type_handle h_dev );
-	bool df_get_prefix_uart( dev_hid::type_handle h_dev );
-	bool df_get_postfix_uart( dev_hid::type_handle h_dev );
+	bool _df_get_prefix_ibutton( dev_hid::type_handle h_dev );
+	bool _df_get_postfix_ibutton( dev_hid::type_handle h_dev );
+	bool _df_get_prefix_uart( dev_hid::type_handle h_dev );
+	bool _df_get_postfix_uart( dev_hid::type_handle h_dev );
 
-	bool df_get_version( dev_hid::type_handle h_dev );
+	bool _df_get_enable_track( dev_hid::type_handle h_dev, type_msr_track_number track );
+	bool _df_get_private_prefix( dev_hid::type_handle h_dev, type_msr_track_number track );
+	bool _df_get_private_postfix( dev_hid::type_handle h_dev, type_msr_track_number track );
 
-	bool df_get_enable_track( type_msr_track_number track );
-	bool df_get_private_prefix( type_msr_track_number track );
-	bool df_get_private_postfix( type_msr_track_number track );
-
-	bool df_get(
+	bool _df_get(
 			dev_hid::type_handle h_dev
 			, type_msr_host_packet & rsp
 			, unsigned long dw_offset
 			, unsigned long dw_size );
 
 
-	bool send_request(
+	bool _send_request(
 			dev_hid::type_handle h_dev
 			, type_msr_cmd cmd
 			, unsigned char c_sub
@@ -497,24 +498,26 @@ private:
 			, unsigned char *s_response = NULL
 			);
 
-	bool send_request(
+	bool _send_request(
 			dev_hid::type_handle h_dev
 			, const type_msr_host_packet & req
 			, type_msr_host_packet *p_rsp = NULL
 			);
 
-	bool df_set(
+	bool _df_set(
 			dev_hid::type_handle h_dev
 			, type_msr_host_packet & rsp
 			, unsigned long dw_offset
 			, unsigned long dw_size
 			, unsigned char *ps_data );
 
-	bool df_set_key_map_table( dev_hid::type_handle h_dev );
+	bool _df_set_key_map_table( dev_hid::type_handle h_dev );
 
-	bool get_tag_from_tag_type( MSR_TAG & out_tag, const type_tag & v_in_tag );
+	bool _get_tag_from_tag_type( MSR_TAG & out_tag, const type_tag & v_in_tag );
+	bool _get_tag_type_from_tag( type_tag & v_out_tag, PMSR_TAG p_in_tag );
 
 private:
+	type_uid m_uid;
 	type_name m_name;
 	inner_version m_version;
 	inner_version m_structure_version;

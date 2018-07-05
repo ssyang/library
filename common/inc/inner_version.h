@@ -62,13 +62,13 @@ public:
 
 	}
 
-	inner_version * operator=( const inner_version & v )
+	inner_version & operator=( const inner_version & v )
 	{
 		this->m_version = v.m_version;
 		return *this;
 	}
 
-	inner_version * operator=( const type_version & v )
+	inner_version & operator=( const type_version & v )
 	{
 		this->m_version = v;
 		return *this;
@@ -97,7 +97,7 @@ public:
 		for( int i = 0; i<const_size_of_type_version; i++ ){
 			if( this->m_version[i] > v.m_version[i])
 				return true;
-			else ( this->m_version[i] < v.m_version[i])
+			else if( this->m_version[i] < v.m_version[i])
 				return false;
 		}
 		return false;
@@ -108,7 +108,7 @@ public:
 		for( int i = 0; i<const_size_of_type_version; i++ ){
 			if( this->m_version[i] > v.m_version[i])
 				return true;
-			else ( this->m_version[i] < v.m_version[i])
+			else if( this->m_version[i] < v.m_version[i])
 				return false;
 		}
 		return true;
@@ -119,7 +119,7 @@ public:
 		for( int i = 0; i<const_size_of_type_version; i++ ){
 			if( this->m_version[i] > v.m_version[i])
 				return false;
-			else ( this->m_version[i] < v.m_version[i])
+			else if( this->m_version[i] < v.m_version[i])
 				return true;
 		}
 		return false;
@@ -130,7 +130,7 @@ public:
 		for( int i = 0; i<const_size_of_type_version; i++ ){
 			if( this->m_version[i] > v.m_version[i])
 				return false;
-			else ( this->m_version[i] < v.m_version[i])
+			else if( this->m_version[i] < v.m_version[i])
 				return true;
 		}
 		return true;
@@ -144,7 +144,7 @@ public:
 	string get_string()
 	{
 		ostringstream oss(ostringstream::out);
-		oss << m_version[0] << "." << m_version[1] << "." m_version[2] << "." m_version[3];
+		oss << m_version[0] << "." << m_version[1] << "." << m_version[2] << "." << m_version[3];
 		return oss.str();
 	}
 
