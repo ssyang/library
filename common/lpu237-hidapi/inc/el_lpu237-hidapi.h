@@ -26,6 +26,33 @@
 #define LPU237_HIDAPI_EXPORT_CALL LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL /**< API export and call macro*/
 
 	/*!
+	 * constants
+	 */
+#define LPU237_DLL_SIZE_ID			16
+#define LPU237_DLL_SIZE_NAME		16
+#define LPU237_DLL_SIZE_VERSION		4
+
+	/*
+	 * for updating firmware
+	 */
+#define	LPU237_DLL_WPARAM_COMPLETE		0	//firmware update complete.
+#define	LPU237_DLL_WPARAM_SUCCESS			0	//firmware update complete.
+#define	LPU237_DLL_WPARAM_FOUND_BL		1	//found bootloader.
+#define	LPU237_DLL_WPARAM_SECTOR_ERASE	2
+#define	LPU237_DLL_WPARAM_SECTOR_WRITE	3
+#define	LPU237_DLL_WPARAM_ERROR			0xFFFF
+	/*!
+	*	the callback function type.
+	*	this type will be used in LPU237_fw_msr_update()
+	*
+	*	parameters
+	*		1'st - user defined data.
+	*		2'nd - current processing result : LPU237_DLL_RESULT_x
+	*		3'th - LPU237_DLL_WPARAM_x.
+	*/
+	typedef	unsigned long (LPU237_HIDAPI_CALL *type_lpu237_update_callback)(void*,unsigned long,unsigned long);
+
+	/*!
 	 *	return value definition.
 	 */
 #define LPU237_DLL_RESULT_SUCCESS				0
@@ -80,6 +107,35 @@ typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_wait
 #endif
 
 typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_get_data)( unsigned long dw_buffer_index, unsigned long dw_iso_track, unsigned char *s_track_data );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_sys_save_setting)( LPU237_HANDLE h_dev );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_sys_recover_setting)( LPU237_HANDLE h_dev );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL (*type_LPU237_sys_get_name)(
+		LPU237_HANDLE h_dev
+		, unsigned char *s_name
+		);
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT (*type_LPU237_sys_get_version)( LPU237_HANDLE h_dev, unsigned char *s_version );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT (*type_LPU237_sys_get_version_major)( const unsigned char *s_version );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT (*type_LPU237_sys_get_version_minor)( const unsigned char *s_version );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT (*type_LPU237_sys_cancel_update)( LPU237_HANDLE h_dev );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT (*type_LPU237_sys_update_callback_w)( const unsigned char *s_id, type_lpu237_update_callback cb_update, void *p_user, const wchar_t *s_rom_file_name, unsigned long dw_index );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT (*type_LPU237_sys_update_callback_a)(	const unsigned char *s_id, type_lpu237_update_callback cb_update, void *p_user, const char *s_rom_file_name, unsigned long dw_index	);
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT (*type_LPU237_sys_rom_load_w)( const wchar_t *s_rom_file_name );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT (*type_LPU237_sys_rom_load_a)( const char *s_rom_file_name );
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT (*type_LPU237_sys_rom_get_index_w)(const wchar_t *s_rom_file_name, const unsigned char *s_name, const unsigned char *s_version);
+
+typedef	unsigned long LPU237_HIDAPI_EXPORT (*type_LPU237_sys_rom_get_index_a)(const char *s_rom_file_name, const unsigned char *s_name, const unsigned char *s_version);
 
 #ifdef __cplusplus
 }

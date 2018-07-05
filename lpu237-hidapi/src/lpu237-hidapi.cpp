@@ -87,7 +87,7 @@ shared::type_result_fun _tx_callback( void *h_dev, const shared::type_ptr_buffer
 			LOG_ERROR("ptr_tx->size() == 0");
 			continue;
 		}
-		n_tx = ptr_tx->size();
+		n_tx = (unsigned long)ptr_tx->size();
 		s_tx = &((*ptr_tx)[0]);
 		//
 		if( h_dev == 0 ){
@@ -1293,6 +1293,379 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str());
 
+	return dw_result;
+}
+
+/*********************************************************************************************
+ * system interface.
+ */
+/*!
+* function
+*	save the current lpu237 device setting.
+*
+* parameters
+*	hDev : [in] device handle( return value of LPU237_open() )
+*
+* return
+*	if success, return LPU237_DLL_RESULT_SUCCESS
+*	else return LPU237_DLL_RESULT_ERROR
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_save_setting( LPU237_HANDLE h_dev )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+/*!
+* function
+*	resetting  lpu237 device with saved setting.
+*
+* parameters
+*	hDev : [in] device handle( return value of LPU237_open() )
+*
+* return
+*	if success, return LPU237_DLLW_RESULT_SUCCESS
+*	else return LPU237_DLL_RESULT_ERROR
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_recover_setting( LPU237_HANDLE h_dev )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+/*!
+* function
+*	get device internal name.
+*
+* parameters
+*	hDev : [in] device handle( return value of LPU237_open() )
+*	sName : [in/out] A pointer to the buffer that save the device name.
+*			this value can be NULL(0).
+*
+* return
+* 	if error, return LPU237_DLL_RESULT_ERROR
+*	else the size of internal name.[unit byte]
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_get_name(
+		LPU237_HANDLE h_dev
+		, unsigned char *s_name
+		)
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+
+/*!
+* function
+*	get device firmware version.
+*
+* parameters
+*	hDev : [in] device handle( return value of LPU237_open() )
+*	sName : [in/out] A pointer to the buffer that save the device firmware version.( version 4 bytes )
+*			this value can be NULL(0).
+*
+* return
+* 	if error, return LPU237_DLL_RESULT_ERROR
+*	else the size of version.[unit byte]
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version( LPU237_HANDLE h_dev, unsigned char *s_version )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+/*!
+* function
+*	get major number from firmware version.
+*
+* parameters
+*	sVersion : [in] device firmware version( return value of LPU237_sys_get_version() ).
+*			this value can be NULL(0).
+*
+* return
+* 	if error, return LPU237_DLL_RESULT_ERROR
+*	else major version number.
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version_major( const unsigned char *s_version )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+" );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+/*!
+* function
+*	get minor number from firmware version.
+*
+* parameters
+*	sVersion : [in] device firmware version( return value of LPU237_sys_get_version() ).
+*			this value can be NULL(0).
+*
+* return
+* 	if error, return LPU237_DLL_RESULT_ERROR
+*	else minor version number.
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version_minor( const unsigned char *s_version )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+" );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+/*!
+* function
+*	stop operation of LPU237_sys_update_x.
+*
+* parameters
+*
+* return
+*	if success, return LPU237_DLL_RESULT_SUCCESS
+*	else return LPU237_DLL_RESULT_ERROR
+*
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_cancel_update( LPU237_HANDLE h_dev )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+
+/*!
+* function
+*	start firmware update.( unicode version )
+*
+* parameters
+*	sId : [in] the device ID.( ID is 16 bytes )
+*	cbUpdate : [in] callback function for serving updating information.
+*	pUser : [in] user data pointer for calling cbUpdate().
+*	sRomFileName : [in] rom file name. unicode, zero-string type. this value can be NULL(0).
+*	dwIndex : [in] the index of firmware in rom file. greater then equal -1
+*
+* return
+* 	if error, return LPU237_DLL_RESULT_ERROR.
+*	else LPU237_DLL_RESULT_SUCCESS
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_w
+		(
+		const unsigned char *s_id
+		, type_lpu237_update_callback cb_update
+		, void *p_user
+		, const wchar_t *s_rom_file_name
+		, unsigned long dw_index
+		)
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+" );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+/*!
+* function
+*	start firmware update..( Multi Byte Code Set version )
+*
+* parameters
+*	sId : [in] the device ID.( ID is 16 bytes )
+*	cbUpdate : [in] callback function for serving updating information.
+*	pUser : [in] user data pointer for calling cbUpdate().
+*	sRomFileName : [in] rom file name. multi-byte-code-set, zero-string type. this value can be NULL(0).
+*	dwIndex : [in] the index of firmware in rom file. greater then equal -1
+*
+* return
+* 	if error, return LPU237_DLL_RESULT_ERROR
+*	else LPU237_DLL_RESULT_SUCCESS
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_a
+		(
+		const unsigned char *s_id
+		, type_lpu237_update_callback cb_update
+		, void *p_user
+		, const char *s_rom_file_name
+		, unsigned long dw_index
+		)
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+" );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+/*!
+* function
+*	load rom file.( unicode version )
+*
+* parameters
+*	sRomFileName : [in] rom file name. unicode, zero-string type. this value can be NULL(0).
+*
+* return
+* 	if error, return LPU237_DLL_RESULT_ERROR
+*	else LPU237_DLL_RESULT_SUCCESS
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_w( const wchar_t *s_rom_file_name )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+" );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+/*!
+* function
+*	load rom file.( Multi Byte Code Set version )
+*
+* parameters
+*	sRomFileName : [in] rom file name. multi-byte-code-set, zero-string type. this value can be NULL(0).
+*
+* return
+* 	if error, return LPU237_FW_RESULT_ERROR
+*	else LPU237_FW_RESULT_SUCCESS
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_a( const char *s_rom_file_name )
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+" );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+/*!
+* function
+*	get firmware index value( greater then equal 0 ) in rom file.( unicode version ).
+*
+* parameters
+*	sRomFileName : [in] rom file name. unicode, zero-string type. this value can be NULL(0).
+*	sName : [in] device internal name. LPU237_fw_msr_get_name' return value.
+*	sVersion : [in] device firmware version. LPU237_fw_msr_get_version' return value.
+*
+* return
+* 	if error, return LPU237_DLL_RESULT_ERROR
+*	else firmware index value( greater then equal 0 )
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_w(
+		const wchar_t *s_rom_file_name
+		, const unsigned char *s_name
+		, const unsigned char *s_version
+		)
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+" );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+/*!
+* function
+*	get firmware index value( greater then equal 0 ) in rom file.( multi-byte-code-set version ).
+*
+* parameters
+*	sRomFileName : [in] rom file name. multi-byte-code-set, zero-string type. this value can be NULL(0).
+*	sName : [in] device internal name. LPU237_fw_msr_get_name' return value.
+*	sVersion : [in] device firmware version. LPU237_fw_msr_get_version' return value.
+*
+* return
+* 	if error, return LPU237_FW_RESULT_ERROR
+*	else firmware index value( greater then equal 0 )
+*/
+unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_a(
+		const char *s_rom_file_name
+		, const unsigned char *s_name
+		, const unsigned char *s_version
+		)
+{
+	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+" );
+
+	do{
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
 	return dw_result;
 }
 
