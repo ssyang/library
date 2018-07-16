@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <string>
 
+#include "shared_type.h"
 #include "el_lpu237-hidapi.h"
 
 using namespace std;
@@ -29,39 +30,39 @@ public:
 
 	bool is_setup_ok();
 
-	unsigned long LPU237_dll_on();
+	type_dword LPU237_dll_on();
 
-	unsigned long LPU237_dll_off();
+	type_dword LPU237_dll_off();
 
-	unsigned long LPU237_get_list_w(wchar_t *ss_dev_path);
-	unsigned long LPU237_get_list_a(char *ss_dev_path);
+	type_dword LPU237_get_list_w(wchar_t *ss_dev_path);
+	type_dword LPU237_get_list_a(char *ss_dev_path);
 
 	LPU237_HANDLE LPU237_open_w( const wchar_t *s_dev_path );
 	LPU237_HANDLE LPU237_open_a( const char *s_dev_path );
 
-	unsigned long LPU237_close( LPU237_HANDLE h_dev );
+	type_dword LPU237_close( LPU237_HANDLE h_dev );
 
-	unsigned long LPU237_get_id( LPU237_HANDLE h_dev, unsigned char *s_id );
+	type_dword LPU237_get_id( LPU237_HANDLE h_dev, unsigned char *s_id );
 
-	unsigned long LPU237_enable( LPU237_HANDLE h_dev );
+	type_dword LPU237_enable( LPU237_HANDLE h_dev );
 
-	unsigned long LPU237_disable( LPU237_HANDLE h_dev );
+	type_dword LPU237_disable( LPU237_HANDLE h_dev );
 
-	unsigned long LPU237_cancel_wait( LPU237_HANDLE h_dev );
+	type_dword LPU237_cancel_wait( LPU237_HANDLE h_dev );
 
-	unsigned long LPU237_wait_swipe_with_waits( LPU237_HANDLE h_dev );
+	type_dword LPU237_wait_swipe_with_waits( LPU237_HANDLE h_dev );
 
-	unsigned long LPU237_wait_key_with_waits( LPU237_HANDLE h_dev );
+	type_dword LPU237_wait_key_with_waits( LPU237_HANDLE h_dev );
 
-	unsigned long LPU237_wait_swipe_or_key_with_waits( LPU237_HANDLE h_dev );
+	type_dword LPU237_wait_swipe_or_key_with_waits( LPU237_HANDLE h_dev );
 
-	unsigned long LPU237_wait_swipe_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
+	type_dword LPU237_wait_swipe_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
 
-	unsigned long LPU237_wait_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
+	type_dword LPU237_wait_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
 
-	unsigned long LPU237_wait_swipe_or_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
+	type_dword LPU237_wait_swipe_or_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
 
-	unsigned long LPU237_get_data( unsigned long dw_buffer_index, unsigned long dw_iso_track, unsigned char *s_track_data );
+	type_dword LPU237_get_data( type_dword dw_buffer_index, type_dword dw_iso_track, unsigned char *s_track_data );
 
 
 private:

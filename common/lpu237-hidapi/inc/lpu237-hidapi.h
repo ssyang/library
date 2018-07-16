@@ -9,6 +9,7 @@
 #define INC_LPU237_HIDAPI_H_
 
 #include <wchar.h>
+#include "shared_type.h"
 
 #ifdef _WIN32
 	#include <windows>
@@ -51,7 +52,7 @@
 	*		2'nd - current processing result : LPU237_DLL_RESULT_x
 	*		3'th - LPU237_DLL_WPARAM_x.
 	*/
-typedef	unsigned long (LPU237_HIDAPI_CALL *type_lpu237_update_callback)(void*,unsigned long,unsigned long);
+typedef	type_dword (LPU237_HIDAPI_CALL *type_lpu237_update_callback)(void*,type_dword,type_dword);
 
 	/*!
 	 *	return value definition.
@@ -68,42 +69,42 @@ typedef	unsigned long (LPU237_HIDAPI_CALL *type_lpu237_update_callback)(void*,un
 extern "C" {
 #endif
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_on();
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_on();
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_off();
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_off();
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_w(wchar_t *ss_dev_path);
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_a(char *ss_dev_path);
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_w(wchar_t *ss_dev_path);
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_a(char *ss_dev_path);
 
 LPU237_HANDLE LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_open_w( const wchar_t *s_dev_path );
 LPU237_HANDLE LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_open_a( const char *s_dev_path );
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_close( LPU237_HANDLE h_dev );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_close( LPU237_HANDLE h_dev );
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HANDLE h_dev, unsigned char *s_id );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HANDLE h_dev, unsigned char *s_id );
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_enable( LPU237_HANDLE h_dev );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_enable( LPU237_HANDLE h_dev );
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_disable( LPU237_HANDLE h_dev );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_disable( LPU237_HANDLE h_dev );
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait( LPU237_HANDLE h_dev );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait( LPU237_HANDLE h_dev );
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_waits( LPU237_HANDLE h_dev );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_waits( LPU237_HANDLE h_dev );
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_waits( LPU237_HANDLE h_dev );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_waits( LPU237_HANDLE h_dev );
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_waits( LPU237_HANDLE h_dev );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_waits( LPU237_HANDLE h_dev );
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter );
 
 #ifdef _WIN32
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_message( LPU237_HANDLE h_dev,HWND h_wnd, UINT n_msg );
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_message( LPU237_HANDLE h_dev,HWND h_wnd, UINT n_msg );
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_message( LPU237_HANDLE h_dev,HWND h_wnd, UINT n_msg );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_message( LPU237_HANDLE h_dev,HWND h_wnd, UINT n_msg );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_message( LPU237_HANDLE h_dev,HWND h_wnd, UINT n_msg );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_message( LPU237_HANDLE h_dev,HWND h_wnd, UINT n_msg );
 #endif
 
 /*
@@ -112,7 +113,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_w
  * dw_iso_track = 2 : MSR ISO2 track data
  * dw_iso_track = 3 : MSR ISO3 track data
  */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned long dw_buffer_index, unsigned long dw_iso_track, unsigned char *s_track_data );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( type_dword dw_buffer_index, type_dword dw_iso_track, unsigned char *s_track_data );
 
 /*********************************************************************************************
  * system interface.
@@ -128,7 +129,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 *	if success, return LPU237_DLL_RESULT_SUCCESS
 *	else return LPU237_DLL_RESULT_ERROR
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_save_setting( LPU237_HANDLE h_dev );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_save_setting( LPU237_HANDLE h_dev );
 
 /*!
 * function
@@ -141,7 +142,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_save_setting( L
 *	if success, return LPU237_DLLW_RESULT_SUCCESS
 *	else return LPU237_DLL_RESULT_ERROR
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_recover_setting( LPU237_HANDLE h_dev );
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_recover_setting( LPU237_HANDLE h_dev );
 
 /*!
 * function
@@ -156,7 +157,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_recover_setting
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else the size of internal name.[unit byte]
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_get_name(
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_get_name(
 		LPU237_HANDLE h_dev
 		, unsigned char *s_name
 		);
@@ -175,7 +176,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_get_name(
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else the size of version.[unit byte]
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version( LPU237_HANDLE h_dev, unsigned char *s_version );
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_get_version( LPU237_HANDLE h_dev, unsigned char *s_version );
 
 /*!
 * function
@@ -189,7 +190,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version( LPU237_HANDLE h_dev, 
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else major version number.
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version_major( const unsigned char *s_version );
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_get_version_major( const unsigned char *s_version );
 
 /*!
 * function
@@ -203,7 +204,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version_major( const unsigned 
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else minor version number.
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version_minor( const unsigned char *s_version );
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_get_version_minor( const unsigned char *s_version );
 
 /*!
 * function
@@ -216,7 +217,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version_minor( const unsigned 
 *	else return LPU237_DLL_RESULT_ERROR
 *
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_cancel_update( LPU237_HANDLE h_dev );
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_cancel_update( LPU237_HANDLE h_dev );
 
 
 /*!
@@ -234,13 +235,13 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_cancel_update( LPU237_HANDLE h_dev
 * 	if error, return LPU237_DLL_RESULT_ERROR.
 *	else LPU237_DLL_RESULT_SUCCESS
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_w
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_w
 		(
 		const unsigned char *s_id
 		, type_lpu237_update_callback cb_update
 		, void *p_user
 		, const wchar_t *s_rom_file_name
-		, unsigned long dw_index
+		, type_dword dw_index
 		);
 
 /*!
@@ -258,13 +259,13 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_w
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else LPU237_DLL_RESULT_SUCCESS
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_a
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_a
 		(
 		const unsigned char *s_id
 		, type_lpu237_update_callback cb_update
 		, void *p_user
 		, const char *s_rom_file_name
-		, unsigned long dw_index
+		, type_dword dw_index
 		);
 
 /*!
@@ -278,7 +279,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_a
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else LPU237_DLL_RESULT_SUCCESS
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_w( const wchar_t *s_rom_file_name );
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_w( const wchar_t *s_rom_file_name );
 
 /*!
 * function
@@ -291,7 +292,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_w( const wchar_t *s_rom_f
 * 	if error, return LPU237_FW_RESULT_ERROR
 *	else LPU237_FW_RESULT_SUCCESS
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_a( const char *s_rom_file_name );
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_a( const char *s_rom_file_name );
 
 /*!
 * function
@@ -306,7 +307,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_a( const char *s_rom_file
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else firmware index value( greater then equal 0 )
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_w(
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_w(
 		const wchar_t *s_rom_file_name
 		, const unsigned char *s_name
 		, const unsigned char *s_version
@@ -325,62 +326,155 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_w(
 * 	if error, return LPU237_FW_RESULT_ERROR
 *	else firmware index value( greater then equal 0 )
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_a(
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_a(
 		const char *s_rom_file_name
 		, const unsigned char *s_name
 		, const unsigned char *s_version
 		);
 
 /*
- *
- *
- * LPU237_sys_enter_config
- * LPU237_sys_leave_config
- * LPU237_sys_apply_config
- * LPU237_sys_goto_boot
- * LPU237_sys_bypass_uart
- * LPU237_sys_enter_opos
- * LPU237_sys_leave_opos
- *
- * LPU237_sys_set_interface
- * LPU237_sys_set_language
- * LPU237_sys_set_buzzer
- * LPU237_sys_set_track_status - each and sum
- * LPU237_sys_set_global_prefix
- * LPU237_sys_set_global_postfix
- * LPU237_sys_set_private_prefix - each and sum
- * LPU237_sys_set_private_postfix - each and sum
- * LPU237_sys_set_prefix_ibutton
- * LPU237_sys_set_postfix_ibutton
- * LPU237_sys_set_prefix_uart
- * LPU237_sys_set_postfix_uart
- * LPU237_sys_set_global_prepostfix_send_condition
- * LPU237_sys_set_keymap_table
- *
- * LPU237_sys_mmd_raw
- *
- * LPU237_sys_get_global_prepostfix_send_condition
- * LPU237_sys_get_uid
- * LPU237_sys_get_version_and_system_type
- * LPU237_sys_get_structure_version
- * LPU237_sys_get_interface
- * LPU237_sys_get_language
- * LPU237_sys_get_buzzer
- * LPU237_sys_get_msd_run_time
- * LPU237_sys_get_track_status - each and sum
- * LPU237_sys_get_global_prefix
- * LPU237_sys_get_global_postfix
- * LPU237_sys_get_private_prefix - each and sum
- * LPU237_sys_get_private_postfix - each and sum
- * LPU237_sys_get_prefix_ibutton
- * LPU237_sys_get_postfix_ibutton
- * LPU237_sys_get_prefix_uart
- * LPU237_sys_get_postfix_uart
- * LPU237_sys_get_language_map_table
- *
- *
- *
-*/
+ * system functions .......
+ */
+type_dword LPU237_sys_enter_config( LPU237_HANDLE h_dev );
+type_dword LPU237_sys_leave_config( LPU237_HANDLE h_dev );
+type_dword LPU237_sys_apply_config( LPU237_HANDLE h_dev );
+type_dword LPU237_sys_goto_boot( LPU237_HANDLE h_dev );
+type_dword LPU237_sys_bypass_uart(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tx
+		, type_dword dw_tx
+		, unsigned char *ps_rx
+		, type_dword dw_rx
+		);
+type_dword LPU237_sys_enter_opos( LPU237_HANDLE h_dev );
+type_dword LPU237_sys_leave_opos( LPU237_HANDLE h_dev );
+
+type_dword LPU237_sys_set_interface( LPU237_HANDLE h_dev, type_dword dw_interface  );
+type_dword LPU237_sys_set_language( LPU237_HANDLE h_dev, type_dword dw_language );
+type_dword LPU237_sys_set_buzzer( LPU237_HANDLE h_dev, type_dword dw_frequency );
+type_dword LPU237_sys_set_track_status(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, type_dword b_enable
+		);
+type_dword LPU237_sys_set_global_prefix(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_set_global_postfix(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_set_private_prefix(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_set_private_postfix(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_set_prefix_ibutton(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_set_postfix_ibutton(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_set_prefix_uart(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_set_postfix_uart(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_set_global_prepostfix_send_condition(
+		LPU237_HANDLE h_dev
+		, type_dword b_all_track_good
+		);
+type_dword LPU237_sys_mmd_raw(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tx
+		, type_dword dw_tx
+		, unsigned char *ps_rx
+		, type_dword dw_rx
+		);
+
+type_dword LPU237_sys_get_global_prepostfix_send_condition( LPU237_HANDLE h_dev, type_dword *pb_all_track_no_error );
+type_dword LPU237_sys_get_uid( LPU237_HANDLE h_dev, unsigned char  *ps_uid );
+type_dword LPU237_sys_get_version_and_system_type(
+		LPU237_HANDLE h_dev
+		, unsigned char *s_version
+		, type_dword *pdw_system_type
+		);
+type_dword LPU237_sys_get_structure_version( LPU237_HANDLE h_dev, unsigned char *s_version );
+type_dword LPU237_sys_get_interface( LPU237_HANDLE h_dev,type_dword *pdw_interface );
+type_dword LPU237_sys_get_language( LPU237_HANDLE h_dev );
+type_dword LPU237_sys_get_buzzer( LPU237_HANDLE h_dev );
+type_dword LPU237_sys_get_msd_run_time( LPU237_HANDLE h_dev );
+type_dword LPU237_sys_get_track_status(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, type_dword *pb_enable
+		);
+type_dword LPU237_sys_get_global_prefix(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_get_global_postfix(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_get_private_prefix(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_get_private_postfix(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_get_prefix_ibutton(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_get_postfix_ibutton(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_get_prefix_uart(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_get_postfix_uart(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		);
+type_dword LPU237_sys_get_language_map_table(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_map
+		, type_dword dw_map
+		);
 
 #ifdef __cplusplus
 }

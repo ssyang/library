@@ -23,7 +23,7 @@ CPP_DEPS += \
 src/%.o: ../src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: GCC C++ Compiler'
-	g++ -std=c++0x -I"/home/totoro/work/library/common/lpu237-hidapi/inc" -I"/home/totoro/work/library/tp_hidapi/pevents" -O0 -g3 -Wall -c -fmessage-length=0 -ldl -pthread -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
+	g++ -std=c++0x -I"/home/totoro/work/library/common/lpu237-hidapi/inc" -I"/home/totoro/work/library/common/inc" -I"/home/totoro/work/library/tp_hidapi/pevents" -O0 -g3 -Wall -c -fmessage-length=0 -ldl -pthread -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

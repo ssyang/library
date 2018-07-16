@@ -10,9 +10,11 @@
 #include "hidapi.h"
 #include "msr_com.h"
 #include "inner_log.h"
+#include "manager_dev.h"
 
 #include <dlfcn.h>
 #include <inner_worker.h>
+#include <inner_rom.h>
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -34,9 +36,9 @@ static int _cmd_tx_rx(
 		hid_device *h_dev
 		, type_msr_cmd cmd
 		, unsigned char c_sub
-		, unsigned long n_data
+		, type_dword n_data
 		, const unsigned char *s_data
-		, unsigned long & n_rx	//in - buffer size, out readdone size
+		, type_dword & n_rx	//in - buffer size, out readdone size
 		, unsigned char *s_rx
 		, bool b_wait_response
 		, LPU237_type_callback cb
@@ -44,11 +46,11 @@ static int _cmd_tx_rx(
 		, bool b_pump = true
 		);
 
-static unsigned long _single_cmd( LPU237_HANDLE h_dev,type_msr_cmd cmd, bool b_pump = true );
-static unsigned long _enter_opos( LPU237_HANDLE h_dev );
-static unsigned long _leave_opos( LPU237_HANDLE h_dev );
+static type_dword _single_cmd( LPU237_HANDLE h_dev,type_msr_cmd cmd, bool b_pump = true );
+static type_dword _enter_opos( LPU237_HANDLE h_dev );
+static type_dword _leave_opos( LPU237_HANDLE h_dev );
 
-static const string & _get_return_string( unsigned long n_result );
+static const string & _get_return_string( type_dword n_result );
 /////////////////////////////////////////////////////
 //local function body.
 shared::type_result_fun _flush_callback( void *h_dev )
@@ -69,14 +71,14 @@ shared::type_result_fun _flush_callback( void *h_dev )
 shared::type_result_fun _tx_callback( void *h_dev, const shared::type_ptr_buffer & ptr_tx,inner_worker::type_mode mode )
 {
 	shared::type_result_fun result_fun =  shared::result_fun_error;
-	unsigned long n_result = 0;
-	unsigned long n_offset = 0;
-	unsigned long n_packet = 0;
+	type_dword n_result = 0;
+	type_dword n_offset = 0;
+	type_dword n_packet = 0;
 	unsigned char n_out_report = 64;
 	unsigned char s_out_report[64+1] = {0,};
 	int n_written = 0;
 	const unsigned char *s_tx = NULL;
-	unsigned long n_tx = 0;
+	type_dword n_tx = 0;
 
 	do{
 		if( ptr_tx == nullptr ){
@@ -87,7 +89,7 @@ shared::type_result_fun _tx_callback( void *h_dev, const shared::type_ptr_buffer
 			LOG_ERROR("ptr_tx->size() == 0");
 			continue;
 		}
-		n_tx = (unsigned long)ptr_tx->size();
+		n_tx = (type_dword)ptr_tx->size();
 		s_tx = &((*ptr_tx)[0]);
 		//
 		if( h_dev == 0 ){
@@ -146,7 +148,7 @@ shared::type_result_fun _rx_callback( void *h_dev, shared::type_ptr_buffer & ptr
 	int n_read = 0;
 	unsigned char n_in_report = 220;
 	unsigned char s_in_report[220+1] = {0,};
-	unsigned long n_offset = 0;
+	type_dword n_offset = 0;
 
 	do{
 		n_result = hid_set_nonblocking((hid_device *)h_dev, 1 );
@@ -272,9 +274,9 @@ int _cmd_tx_rx(
 		hid_device *h_dev
 		, type_msr_cmd cmd
 		, unsigned char c_sub
-		, unsigned long n_data
+		, type_dword n_data
 		, const unsigned char *s_data
-		, unsigned long & n_rx	//in - buffer size, out read-done size
+		, type_dword & n_rx	//in - buffer size, out read-done size
 		, unsigned char *s_rx
 		, bool b_wait_response
 		, LPU237_type_callback cb
@@ -283,7 +285,7 @@ int _cmd_tx_rx(
 		)
 {
 	int n_result_key = -1;
-	unsigned long n_tx = MSR_SIZE_HOST_PACKET_HEADER;
+	type_dword n_tx = MSR_SIZE_HOST_PACKET_HEADER;
 	bool b_need_response = false;
 
 	do{
@@ -372,12 +374,12 @@ int _cmd_tx_rx(
 	return n_result_key;
 }
 
-unsigned long _single_cmd( LPU237_HANDLE h_dev,type_msr_cmd cmd, bool b_pump /*= true*/ )
+type_dword _single_cmd( LPU237_HANDLE h_dev,type_msr_cmd cmd, bool b_pump /*= true*/ )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	do{
-		unsigned long n_rx = 220;
+		type_dword n_rx = 220;
 		unsigned char s_rx[220+1] = { 0, };
 
 		int result_index = _cmd_tx_rx(
@@ -412,16 +414,16 @@ unsigned long _single_cmd( LPU237_HANDLE h_dev,type_msr_cmd cmd, bool b_pump /*=
 
 }
 
-unsigned long _enter_opos( LPU237_HANDLE h_dev )
+type_dword _enter_opos( LPU237_HANDLE h_dev )
 {
 	return _single_cmd( h_dev, msr_cmd_enter_opos, true );
 }
-unsigned long _leave_opos( LPU237_HANDLE h_dev )
+type_dword _leave_opos( LPU237_HANDLE h_dev )
 {
 	return _single_cmd( h_dev, msr_cmd_leave_opos, false );
 }
 
-const string & _get_return_string( unsigned long n_result )
+const string & _get_return_string( type_dword n_result )
 {
 	static string s_result("");
 
@@ -455,9 +457,9 @@ const string & _get_return_string( unsigned long n_result )
 /////////////////////////////////////////////////////
 //exported function body.
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_on()
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_on()
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+");
 	do{
@@ -481,9 +483,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_on()
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_off()
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_off()
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+");
 	do{
@@ -501,12 +503,12 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_dll_off()
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_w(wchar_t *ss_dev_path)
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_w(wchar_t *ss_dev_path)
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 	struct hid_device_info *devs = NULL, *cur_dev=NULL;
-	unsigned long n_dev = 0;
-	unsigned long n_size_byte = 0;
+	type_dword n_dev = 0;
+	type_dword n_size_byte = 0;
 	wchar_t sw_path[256] = { 0, };
 	size_t n_offset = 0;
 	size_t n_size = 0;
@@ -574,12 +576,12 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_w(wchar_t 
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_a(char *ss_dev_path)
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_list_a(char *ss_dev_path)
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 	struct hid_device_info *devs = NULL, *cur_dev=NULL;
-	unsigned long n_dev = 0;
-	unsigned long n_size_byte = 0;
+	type_dword n_dev = 0;
+	type_dword n_size_byte = 0;
 	size_t n_offset = 0;
 
 	LOG_INFO("+ : 0x%X",ss_dev_path);
@@ -665,6 +667,12 @@ LPU237_HANDLE LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_open_w( const wchar
 			continue;
 		}
 
+		if( manager_dev::get_instance().add_device(p_hid) == NULL ){
+			hid_close( p_hid );
+			LOG_INFO("add_device");
+			continue;
+		}
+
 		h_dev = (LPU237_HANDLE)p_hid;
 	}while(0);
 	LOG_INFO("- : 0x%X",h_dev );
@@ -697,6 +705,12 @@ LPU237_HANDLE LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_open_a( const char 
 			continue;
 		}
 
+		if( manager_dev::get_instance().add_device(p_hid) == NULL ){
+			hid_close( p_hid );
+			LOG_INFO("add_device");
+			continue;
+		}
+
 		h_dev = (LPU237_HANDLE)p_hid;
 	}while(0);
 
@@ -705,9 +719,9 @@ LPU237_HANDLE LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_open_a( const char 
 	return h_dev;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_close( LPU237_HANDLE h_dev )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_close( LPU237_HANDLE h_dev )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x",h_dev);
 
@@ -721,8 +735,8 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_close( LPU237_HANDL
 			continue;
 		}
 		//
+		manager_dev::get_instance().remove_device( (hid_device*)h_dev );
 		hid_close( (hid_device*)h_dev );
-
 		// success
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
 	}while(0);
@@ -732,9 +746,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_close( LPU237_HANDL
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HANDLE h_dev, unsigned char *s_id )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HANDLE h_dev, unsigned char *s_id )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x, 0x%x", h_dev,s_id );
 
@@ -752,7 +766,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HAND
 			dw_result = _SIZE_UID;
 			continue;
 		}
-		unsigned long n_rx = 220;
+		type_dword n_rx = 220;
 		unsigned char s_rx[220+1] = { 0, };
 
 		int result_index = _cmd_tx_rx(
@@ -797,9 +811,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_id( LPU237_HAND
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_enable( LPU237_HANDLE h_dev )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_enable( LPU237_HANDLE h_dev )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x", h_dev);
 
@@ -821,9 +835,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_enable( LPU237_HAND
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_disable( LPU237_HANDLE h_dev )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_disable( LPU237_HANDLE h_dev )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x", h_dev);
 
@@ -845,9 +859,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_disable( LPU237_HAN
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait( LPU237_HANDLE h_dev )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait( LPU237_HANDLE h_dev )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x", h_dev);
 
@@ -899,9 +913,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_cancel_wait( LPU237
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_waits( LPU237_HANDLE h_dev )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_waits( LPU237_HANDLE h_dev )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x", h_dev);
 
@@ -938,7 +952,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_wai
 		}
 
 		// success
-		dw_result = (unsigned long)n_result_key;
+		dw_result = (type_dword)n_result_key;
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -946,9 +960,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_wai
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_waits( LPU237_HANDLE h_dev )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_waits( LPU237_HANDLE h_dev )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x", h_dev);
 
@@ -987,7 +1001,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_waits
 		}
 
 		// success
-		dw_result = (unsigned long)n_result_key;
+		dw_result = (type_dword)n_result_key;
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -995,9 +1009,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_waits
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_waits( LPU237_HANDLE h_dev )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_waits( LPU237_HANDLE h_dev )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x", h_dev);
 
@@ -1036,7 +1050,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_w
 		}
 
 		// success
-		dw_result = (unsigned long)n_result_key;
+		dw_result = (type_dword)n_result_key;
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1044,9 +1058,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_w
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x, 0x%x, 0x%x,", h_dev,p_fun,p_parameter );
 
@@ -1075,7 +1089,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_cal
 		}
 
 		// success
-		dw_result = (unsigned long)n_result_key;
+		dw_result = (type_dword)n_result_key;
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1083,9 +1097,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_with_cal
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x, 0x%x, 0x%x,", h_dev,p_fun,p_parameter );
 
@@ -1116,7 +1130,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_callb
 		}
 
 		// success
-		dw_result = (unsigned long)n_result_key;
+		dw_result = (type_dword)n_result_key;
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1124,9 +1138,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_key_with_callb
 	return dw_result;
 }
 
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x, 0x%x, 0x%x,", h_dev,p_fun,p_parameter );
 
@@ -1157,7 +1171,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_w
 		}
 
 		// success
-		dw_result = (unsigned long)n_result_key;
+		dw_result = (type_dword)n_result_key;
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1171,9 +1185,9 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_wait_swipe_or_key_w
  * dw_iso_track = 2 : MSR ISO2 track data
  * dw_iso_track = 3 : MSR ISO3 track data
  */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned long dw_buffer_index, unsigned long dw_iso_track, unsigned char *s_track_data )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( type_dword dw_buffer_index, type_dword dw_iso_track, unsigned char *s_track_data )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 	static inner_worker::type_job_result result = { shared::result_fun_success, nullptr, nullptr };
 	static int n_cur_result_index = -1;
 	int n_new_result_index = (int)dw_buffer_index;
@@ -1230,7 +1244,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 				memcpy( &v_ibutton_post[0], &ps_data[3+8], sizeof(gs_ibutton_post) );
 				if( strcmp(&v_ibutton_post[0],gs_ibutton_post )==0 ){
 					//ibutton data.
-					dw_result = (unsigned long)gn_ibutton_data_size;
+					dw_result = (type_dword)gn_ibutton_data_size;
 					if( s_track_data )
 						memcpy( s_track_data,&ps_data[3],gn_ibutton_data_size );
 				}
@@ -1259,7 +1273,7 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 				continue;
 			}
 
-			dw_result = (unsigned long)ps_data[dw_iso_track-1];
+			dw_result = (type_dword)ps_data[dw_iso_track-1];
 			if( s_track_data ){
 				for( i = 0; i< (int)(dw_iso_track-1); i++ ){
 					if( ((signed char)ps_data[i] ) > 0 ){
@@ -1310,14 +1324,33 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_get_data( unsigned 
 *	if success, return LPU237_DLL_RESULT_SUCCESS
 *	else return LPU237_DLL_RESULT_ERROR
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_save_setting( LPU237_HANDLE h_dev )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_save_setting( LPU237_HANDLE h_dev )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x", h_dev );
 
 	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
 
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		if( !p_dev->df_get_system_parameters( (hid_device*)h_dev ) ){
+			LOG_ERROR("df_get_system_parameters()");
+			continue;
+		}
+
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1335,14 +1368,33 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_save_setting( L
 *	if success, return LPU237_DLLW_RESULT_SUCCESS
 *	else return LPU237_DLL_RESULT_ERROR
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_recover_setting( LPU237_HANDLE h_dev )
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_recover_setting( LPU237_HANDLE h_dev )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x", h_dev );
 
 	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
 
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		if( !p_dev->df_set_system_parameters( (hid_device*)h_dev ) ){
+			LOG_ERROR("df_set_system_parameters()");
+			continue;
+		}
+
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1362,17 +1414,49 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_recover_setting
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else the size of internal name.[unit byte]
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_get_name(
+type_dword LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_get_name(
 		LPU237_HANDLE h_dev
 		, unsigned char *s_name
 		)
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x", h_dev );
 
 	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
 
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		dev_lpu237::type_name v_name = p_dev->get_name();
+		if( v_name.empty() ){
+			if( !p_dev->df_get_name( (hid_device*)h_dev ) ){
+				LOG_ERROR("df_get_name()");
+				continue;
+			}
+			v_name = p_dev->get_name();
+		}
+
+		if( v_name.empty() ){
+			LOG_ERROR("empty()");
+			continue;
+		}
+
+		dw_result = (type_dword)v_name.size();
+		if( s_name ){
+			memcpy( s_name, &v_name[0], v_name.size() );
+		}
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1393,14 +1477,50 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_HIDAPI_CALL LPU237_sys_get_name(
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else the size of version.[unit byte]
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version( LPU237_HANDLE h_dev, unsigned char *s_version )
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_get_version( LPU237_HANDLE h_dev, unsigned char *s_version )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x", h_dev );
 
 	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
 
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		inner_version ver = p_dev->get_version();
+		if( ver == inner_version() ){
+			if( !p_dev->df_get_version_and_system_type((hid_device*)h_dev) ){
+				LOG_ERROR("df_get_version_and_system_type()");
+				continue;
+			}
+
+			ver = p_dev->get_version();
+		}
+
+		if( ver == inner_version() ){
+			LOG_ERROR("ver == inner_version()");
+			continue;
+		}
+
+		dw_result = inner_version::const_size_of_type_version;
+		if( s_version ){
+			s_version[0] = ver.get_major();
+			s_version[1] = ver.get_minor();
+			s_version[2] = ver.get_fix();
+			s_version[3] = ver.get_build();
+		}
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1419,14 +1539,16 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version( LPU237_HANDLE h_dev, 
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else major version number.
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version_major( const unsigned char *s_version )
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_get_version_major( const unsigned char *s_version )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+" );
 
 	do{
-
+		if( s_version == NULL )
+			continue;
+		dw_result = (type_dword)s_version[0];
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1445,14 +1567,16 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version_major( const unsigned 
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else minor version number.
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version_minor( const unsigned char *s_version )
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_get_version_minor( const unsigned char *s_version )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+" );
 
 	do{
-
+		if( s_version == NULL )
+			continue;
+		dw_result = (type_dword)s_version[1];
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1470,14 +1594,22 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_get_version_minor( const unsigned 
 *	else return LPU237_DLL_RESULT_ERROR
 *
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_cancel_update( LPU237_HANDLE h_dev )
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_cancel_update( LPU237_HANDLE h_dev )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+ : 0x%x", h_dev );
 
 	do{
-
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+		//TODO.
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1500,21 +1632,36 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_cancel_update( LPU237_HANDLE h_dev
 * 	if error, return LPU237_DLL_RESULT_ERROR.
 *	else LPU237_DLL_RESULT_SUCCESS
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_w
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_w
 		(
 		const unsigned char *s_id
 		, type_lpu237_update_callback cb_update
 		, void *p_user
 		, const wchar_t *s_rom_file_name
-		, unsigned long dw_index
+		, type_dword dw_index
 		)
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+" );
 
 	do{
+		if( s_rom_file_name == NULL ){
+			LOG_ERROR("s_rom_file_name == NULL");
+			continue;
+		}
 
+		size_t n_size = 0;
+		char s_rom[256] = {0,};
+
+		//convert wchar_t -> char
+		n_size = wcstombs (s_rom, s_rom_file_name, sizeof(s_rom));
+		if( n_size <= 0){
+			LOG_ERROR("wcstombs");
+			continue;
+		}
+
+		dw_result = LPU237_sys_update_callback_a( s_id, cb_update, p_user, s_rom, dw_index );
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1536,20 +1683,33 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_w
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else LPU237_DLL_RESULT_SUCCESS
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_a
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_a
 		(
 		const unsigned char *s_id
 		, type_lpu237_update_callback cb_update
 		, void *p_user
 		, const char *s_rom_file_name
-		, unsigned long dw_index
+		, type_dword dw_index
 		)
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+" );
 
 	do{
+		if( s_id == NULL ){
+			LOG_ERROR("s_id == NULL");
+			continue;
+		}
+		if( cb_update == NULL ){
+			LOG_ERROR("cb_update == NULL");
+			continue;
+		}
+		if( s_rom_file_name == NULL ){
+			LOG_ERROR("s_rom_file_name == NULL");
+			continue;
+		}
+		//TODO.
 
 	}while(0);
 
@@ -1568,14 +1728,29 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_update_callback_a
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else LPU237_DLL_RESULT_SUCCESS
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_w( const wchar_t *s_rom_file_name )
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_w( const wchar_t *s_rom_file_name )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+" );
 
 	do{
+		if( s_rom_file_name == NULL ){
+			LOG_ERROR("s_rom_file_name == NULL");
+			continue;
+		}
 
+		size_t n_size = 0;
+		char s_rom[256] = {0,};
+
+		//convert wchar_t -> char
+		n_size = wcstombs (s_rom, s_rom_file_name, sizeof(s_rom));
+		if( n_size <= 0){
+			LOG_ERROR("wcstombs");
+			continue;
+		}
+
+		dw_result = LPU237_sys_rom_load_a( s_rom );
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1593,14 +1768,30 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_w( const wchar_t *s_rom_f
 * 	if error, return LPU237_FW_RESULT_ERROR
 *	else LPU237_FW_RESULT_SUCCESS
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_a( const char *s_rom_file_name )
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_a( const char *s_rom_file_name )
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+" );
 
 	do{
+		inner_rom::type_result result_rom(inner_rom::result_error);
+		inner_rom::ROMFILE_HEAD header;
+		string s_rom;
 
+		if( s_rom_file_name == NULL ){
+			LOG_ERROR("s_rom_file_name == NULL");
+			continue;
+		}
+
+		s_rom = s_rom_file_name;
+		result_rom = inner_rom::get_instance().load_header( s_rom, &header );
+		if( result_rom != inner_rom::result_success ){
+			LOG_ERROR("load_header()");
+			continue;
+		}
+
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -1620,17 +1811,32 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_load_a( const char *s_rom_file
 * 	if error, return LPU237_DLL_RESULT_ERROR
 *	else firmware index value( greater then equal 0 )
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_w(
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_w(
 		const wchar_t *s_rom_file_name
 		, const unsigned char *s_name
 		, const unsigned char *s_version
 		)
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+" );
 
 	do{
+		if( s_rom_file_name == NULL ){
+			LOG_ERROR("s_rom_file_name == NULL");
+			continue;
+		}
+		size_t n_size = 0;
+		char s_rom[256] = {0,};
+
+		//convert wchar_t -> char
+		n_size = wcstombs (s_rom, s_rom_file_name, sizeof(s_rom));
+		if( n_size <= 0){
+			LOG_ERROR("wcstombs");
+			continue;
+		}
+
+		dw_result = LPU237_sys_rom_get_index_a( s_rom, s_name, s_version );
 
 	}while(0);
 
@@ -1651,18 +1857,1446 @@ unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_w(
 * 	if error, return LPU237_FW_RESULT_ERROR
 *	else firmware index value( greater then equal 0 )
 */
-unsigned long LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_a(
+type_dword LPU237_HIDAPI_EXPORT LPU237_sys_rom_get_index_a(
 		const char *s_rom_file_name
 		, const unsigned char *s_name
 		, const unsigned char *s_version
 		)
 {
-	unsigned long dw_result = LPU237_DLL_RESULT_ERROR;
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
 	LOG_INFO("+" );
 
 	do{
+		if( s_name == NULL ){
+			LOG_ERROR("s_name == NULL");
+			continue;
+		}
+		if( s_version == NULL ){
+			LOG_ERROR("s_version == NULL");
+			continue;
+		}
+		if( s_rom_file_name == NULL ){
+			LOG_ERROR("s_rom_file_name == NULL");
+			continue;
+		}
+		//
+		inner_rom::type_result result_rom(inner_rom::result_error);
+		inner_rom::ROMFILE_HEAD header;
+		string s_rom;
 
+		s_rom = s_rom_file_name;
+		result_rom = inner_rom::get_instance().load_header( s_rom, &header );
+		if( result_rom != inner_rom::result_success ){
+			LOG_ERROR("load_header()");
+			continue;
+		}
+
+		int n_index = inner_rom::get_instance().get_updateble_item_index(
+				&header
+				,s_name
+				,s_version[0]
+				,s_version[1]
+				,s_version[2]
+				,s_version[3]);
+		if( n_index < 0){
+			LOG_ERROR("get_updateble_item_index()");
+		}
+
+		dw_result = (type_dword)n_index;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+/*
+ * ***********************************************************************************
+ * system functions .......
+ * ***********************************************************************************
+ */
+type_dword LPU237_sys_enter_config( LPU237_HANDLE h_dev )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		if( !p_dev->df_enter_config((hid_device*)h_dev) ){
+			LOG_ERROR("df_enter_config()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_leave_config( LPU237_HANDLE h_dev )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		if( !p_dev->df_leave_config((hid_device*)h_dev) ){
+			LOG_ERROR("df_leave_config()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+type_dword LPU237_sys_apply_config( LPU237_HANDLE h_dev )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		if( !p_dev->df_apply_config((hid_device*)h_dev) ){
+			LOG_ERROR("df_apply_config()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_goto_boot( LPU237_HANDLE h_dev )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		if( !p_dev->df_goto_bootloader((hid_device*)h_dev) ){
+			LOG_ERROR("df_apply_config()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_bypass_uart(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tx
+		, type_dword dw_tx
+		, unsigned char *ps_rx
+		, type_dword dw_rx
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		shared::type_buffer v_tx(dw_tx, 0 );
+		memcpy( &v_tx[0], ps_tx, dw_tx );
+
+		shared::type_buffer v_rx(0);
+		if( !p_dev->df_bypass_uart((hid_device*)h_dev,v_tx, v_rx ) ){
+			LOG_ERROR("df_bypass_uart()");
+			continue;
+		}
+
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+type_dword LPU237_sys_enter_opos( LPU237_HANDLE h_dev )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		if( !p_dev->df_enter_opos((hid_device*)h_dev)){
+			LOG_ERROR("df_enter_opos()");
+			continue;
+		}
+
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_leave_opos( LPU237_HANDLE h_dev )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		if( !p_dev->df_leave_opos((hid_device*)h_dev)){
+			LOG_ERROR("df_enter_opos()");
+			continue;
+		}
+
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_interface( LPU237_HANDLE h_dev, type_dword dw_interface  )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		if( !p_dev->set_interface((dev_lpu237::type_interface)dw_interface).df_set_interface((hid_device*)h_dev) ){
+			LOG_ERROR("df_set_interface()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_language( LPU237_HANDLE h_dev, type_dword dw_language )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		if( !p_dev->set_language((dev_lpu237::type_language_map_index)dw_language).df_set_language((hid_device*)h_dev) ){
+			LOG_ERROR("df_set_language()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_buzzer( LPU237_HANDLE h_dev, type_dword dw_frequency )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		if( !p_dev->set_buzzer_frequency((int)dw_frequency).df_set_buzzer((hid_device*)h_dev ) ){
+			LOG_ERROR("df_set_buzzer()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_track_status(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, type_dword b_enable
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		bool enable(false);
+		if( b_enable )
+			enable = true;
+
+		if( !p_dev->set_enable_track( (dev_lpu237::type_msr_track_number)dw_track,enable).df_set_enable_track((hid_device*)h_dev) ){
+			LOG_ERROR("df_set_enable_track()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_global_prefix(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		dev_lpu237::type_tag v_tag(dw_tag);
+		memcpy( &v_tag[0], ps_tag, dw_tag );
+
+		if( !p_dev->set_global_prefix( v_tag ).df_set_global_prefix((hid_device*)h_dev ) ){
+			LOG_ERROR("df_set_global_prefix()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_global_postfix(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		dev_lpu237::type_tag v_tag(dw_tag);
+		memcpy( &v_tag[0], ps_tag, dw_tag );
+
+		if( !p_dev->set_global_postfix( v_tag ).df_set_global_postfix((hid_device*)h_dev ) ){
+			LOG_ERROR("df_set_global_postfix()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_private_prefix(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		dev_lpu237::type_tag v_tag(dw_tag);
+		memcpy( &v_tag[0], ps_tag, dw_tag );
+
+		if( !p_dev->set_private_prefix( (dev_lpu237::type_msr_track_number)dw_track, v_tag ).df_set_private_prefix((hid_device*)h_dev ) ){
+			LOG_ERROR("df_set_private_prefix()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_private_postfix(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		dev_lpu237::type_tag v_tag(dw_tag);
+		memcpy( &v_tag[0], ps_tag, dw_tag );
+
+		if( !p_dev->set_private_postfix( (dev_lpu237::type_msr_track_number)dw_track, v_tag ).df_set_private_postfix((hid_device*)h_dev ) ){
+			LOG_ERROR("df_set_private_postfix()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_prefix_ibutton(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		dev_lpu237::type_tag v_tag(dw_tag);
+		memcpy( &v_tag[0], ps_tag, dw_tag );
+
+		if( !p_dev->set_ibutton_prefix( v_tag ).df_set_prefix_ibutton((hid_device*)h_dev ) ){
+			LOG_ERROR("df_set_prefix_ibutton()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_postfix_ibutton(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		dev_lpu237::type_tag v_tag(dw_tag);
+		memcpy( &v_tag[0], ps_tag, dw_tag );
+
+		if( !p_dev->set_ibutton_postfix( v_tag ).df_set_postfix_ibutton((hid_device*)h_dev ) ){
+			LOG_ERROR("df_set_postfix_ibutton()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_prefix_uart(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		dev_lpu237::type_tag v_tag(dw_tag);
+		memcpy( &v_tag[0], ps_tag, dw_tag );
+
+		if( !p_dev->set_uart_prefix( v_tag ).df_set_prefix_uart((hid_device*)h_dev ) ){
+			LOG_ERROR("df_set_prefix_uart()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_postfix_uart(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		dev_lpu237::type_tag v_tag(dw_tag);
+		memcpy( &v_tag[0], ps_tag, dw_tag );
+
+		if( !p_dev->set_uart_postfix( v_tag ).df_set_postfix_uart((hid_device*)h_dev ) ){
+			LOG_ERROR("df_set_postfix_uart()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_set_global_prepostfix_send_condition(
+		LPU237_HANDLE h_dev
+		, type_dword b_all_track_good
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		bool is_all_track_good(false);
+
+		if(b_all_track_good )
+			is_all_track_good = true;
+
+		if( !p_dev->set_global_prepostfix_send_condition(is_all_track_good).df_set_global_prepostfix_send_condition((hid_device*)h_dev) ){
+			LOG_ERROR("df_set_global_prepostfix_send_condition()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_mmd_raw(
+		LPU237_HANDLE h_dev
+		, const unsigned char *ps_tx
+		, type_dword dw_tx
+		, unsigned char *ps_rx
+		, type_dword dw_rx
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_global_prepostfix_send_condition( LPU237_HANDLE h_dev,type_dword *pb_all_track_no_error )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		if( !p_dev->df_get_global_prepostfix_send_condition((hid_device*)h_dev) ){
+			LOG_ERROR("df_get_global_prepostfix_send_condition()");
+			continue;
+		}
+
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		if( pb_all_track_no_error == NULL ){
+			continue;
+		}
+
+		*pb_all_track_no_error = 0;
+
+		if( p_dev->get_global_prepostfix_send_condition() )
+			*pb_all_track_no_error = 1;
+
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_uid( LPU237_HANDLE h_dev, unsigned char  *ps_uid )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		if( !p_dev->df_get_uid((hid_device*)h_dev)){
+			LOG_ERROR("df_get_uid()");
+			continue;
+		}
+
+		dev_lpu237::type_uid uid = p_dev->get_uid();
+		if( uid.size() != dev_lpu237::const_size_uid ){
+			LOG_ERROR("uid.size() != dev_lpu237::const_size_uid");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		if( ps_uid == NULL ){
+			continue;
+		}
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_version_and_system_type(
+		LPU237_HANDLE h_dev
+		, unsigned char *s_version
+		, type_dword *pdw_system_type
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		if( !p_dev->df_get_version_and_system_type((hid_device*)h_dev)){
+			LOG_ERROR("df_get_version_and_system_type()");
+			continue;
+		}
+		type_dword type = p_dev->get_system_type();
+		inner_version  v = p_dev->get_version();
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+
+		if( s_version ){
+			s_version[0] = v.get_major();
+			s_version[1] = v.get_minor();
+			s_version[2] = v.get_fix();
+			s_version[3] = v.get_build();
+		}
+		if( pdw_system_type ){
+			*pdw_system_type = type;
+		}
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_structure_version( LPU237_HANDLE h_dev, unsigned char *s_version )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+		if( !p_dev->df_get_structure_version((hid_device*)h_dev)){
+			LOG_ERROR("df_get_structure_version()");
+			continue;
+		}
+		inner_version v = p_dev->get_structure_version();
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		if( s_version ){
+			s_version[0] = v.get_major();
+			s_version[1] = v.get_minor()();
+			s_version[2] = v.get_fix();
+			s_version[3] = v.get_build();
+		}
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_interface( LPU237_HANDLE h_dev,type_dword *pdw_interface )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_language( LPU237_HANDLE h_dev )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_buzzer( LPU237_HANDLE h_dev )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_msd_run_time( LPU237_HANDLE h_dev )
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_track_status(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, type_dword *pb_enable
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_global_prefix(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_global_postfix(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_private_prefix(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_private_postfix(
+		LPU237_HANDLE h_dev
+		, type_dword dw_track
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_prefix_ibutton(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_postfix_ibutton(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_prefix_uart(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_postfix_uart(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_tag
+		, type_dword dw_tag
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
+	}while(0);
+
+	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
+	return dw_result;
+}
+
+type_dword LPU237_sys_get_language_map_table(
+		LPU237_HANDLE h_dev
+		, unsigned char *ps_map
+		, type_dword dw_map
+		)
+{
+	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
+
+	LOG_INFO("+ : 0x%x", h_dev );
+
+	do{
+		if( !inner_worker::get_instance().is_setup_ok() ){
+			LOG_ERROR("!is_setup_ok()");
+			continue;
+		}
+		if( h_dev == NULL  ){
+			LOG_ERROR("h_dev == NULL");
+			continue;
+		}
+
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		if( p_dev == NULL ){
+			LOG_ERROR("get_device()");
+			continue;
+		}
+
+		//TODO.
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );

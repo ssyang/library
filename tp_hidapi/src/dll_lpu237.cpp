@@ -165,7 +165,7 @@ bool dll_lpu237::is_setup_ok()
 	return m_b_setup_ok;
 }
 
-unsigned long dll_lpu237::LPU237_dll_on()
+type_dword dll_lpu237::LPU237_dll_on()
 {
 	if( m_LPU237_dll_on )
 		return m_LPU237_dll_on();
@@ -173,7 +173,7 @@ unsigned long dll_lpu237::LPU237_dll_on()
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_dll_off()
+type_dword dll_lpu237::LPU237_dll_off()
 {
 	if( m_LPU237_dll_off )
 		return m_LPU237_dll_off();
@@ -181,14 +181,14 @@ unsigned long dll_lpu237::LPU237_dll_off()
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_get_list_w(wchar_t *ss_dev_path)
+type_dword dll_lpu237::LPU237_get_list_w(wchar_t *ss_dev_path)
 {
 	if( m_LPU237_get_list_w )
 		return m_LPU237_get_list_w(ss_dev_path);
 	else
 		return LPU237_DLL_RESULT_ERROR;
 }
-unsigned long dll_lpu237::LPU237_get_list_a(char *ss_dev_path)
+type_dword dll_lpu237::LPU237_get_list_a(char *ss_dev_path)
 {
 	if( m_LPU237_get_list_a )
 		return m_LPU237_get_list_a(ss_dev_path);
@@ -211,7 +211,7 @@ LPU237_HANDLE dll_lpu237::LPU237_open_a( const char *s_dev_path )
 		return NULL;
 }
 
-unsigned long dll_lpu237::LPU237_close( LPU237_HANDLE h_dev )
+type_dword dll_lpu237::LPU237_close( LPU237_HANDLE h_dev )
 {
 	if( m_LPU237_close )
 		return m_LPU237_close(h_dev);
@@ -219,7 +219,7 @@ unsigned long dll_lpu237::LPU237_close( LPU237_HANDLE h_dev )
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_get_id( LPU237_HANDLE h_dev, unsigned char *s_id )
+type_dword dll_lpu237::LPU237_get_id( LPU237_HANDLE h_dev, unsigned char *s_id )
 {
 	if( m_LPU237_get_id )
 		return m_LPU237_get_id(h_dev,s_id);
@@ -227,7 +227,7 @@ unsigned long dll_lpu237::LPU237_get_id( LPU237_HANDLE h_dev, unsigned char *s_i
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_enable( LPU237_HANDLE h_dev )
+type_dword dll_lpu237::LPU237_enable( LPU237_HANDLE h_dev )
 {
 	if( m_LPU237_enable )
 		return m_LPU237_enable(h_dev);
@@ -235,7 +235,7 @@ unsigned long dll_lpu237::LPU237_enable( LPU237_HANDLE h_dev )
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_disable( LPU237_HANDLE h_dev )
+type_dword dll_lpu237::LPU237_disable( LPU237_HANDLE h_dev )
 {
 	if( m_LPU237_disable )
 		return m_LPU237_disable(h_dev);
@@ -243,7 +243,7 @@ unsigned long dll_lpu237::LPU237_disable( LPU237_HANDLE h_dev )
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_cancel_wait( LPU237_HANDLE h_dev )
+type_dword dll_lpu237::LPU237_cancel_wait( LPU237_HANDLE h_dev )
 {
 	if( m_LPU237_cancel_wait )
 		return m_LPU237_cancel_wait(h_dev);
@@ -251,7 +251,7 @@ unsigned long dll_lpu237::LPU237_cancel_wait( LPU237_HANDLE h_dev )
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_wait_swipe_with_waits( LPU237_HANDLE h_dev )
+type_dword dll_lpu237::LPU237_wait_swipe_with_waits( LPU237_HANDLE h_dev )
 {
 	if( m_LPU237_wait_swipe_with_waits )
 		return m_LPU237_wait_swipe_with_waits(h_dev);
@@ -259,7 +259,7 @@ unsigned long dll_lpu237::LPU237_wait_swipe_with_waits( LPU237_HANDLE h_dev )
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_wait_key_with_waits( LPU237_HANDLE h_dev )
+type_dword dll_lpu237::LPU237_wait_key_with_waits( LPU237_HANDLE h_dev )
 {
 	if( m_LPU237_wait_key_with_waits )
 		return m_LPU237_wait_key_with_waits(h_dev);
@@ -267,7 +267,7 @@ unsigned long dll_lpu237::LPU237_wait_key_with_waits( LPU237_HANDLE h_dev )
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_wait_swipe_or_key_with_waits( LPU237_HANDLE h_dev )
+type_dword dll_lpu237::LPU237_wait_swipe_or_key_with_waits( LPU237_HANDLE h_dev )
 {
 	if( m_LPU237_wait_swipe_or_key_with_waits )
 		return m_LPU237_wait_swipe_or_key_with_waits(h_dev);
@@ -275,7 +275,7 @@ unsigned long dll_lpu237::LPU237_wait_swipe_or_key_with_waits( LPU237_HANDLE h_d
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_wait_swipe_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
+type_dword dll_lpu237::LPU237_wait_swipe_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
 {
 	if( m_LPU237_wait_swipe_with_callback )
 		return m_LPU237_wait_swipe_with_callback(h_dev,p_fun,p_parameter);
@@ -283,7 +283,7 @@ unsigned long dll_lpu237::LPU237_wait_swipe_with_callback( LPU237_HANDLE h_dev, 
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_wait_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
+type_dword dll_lpu237::LPU237_wait_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
 {
 	if( m_LPU237_wait_key_with_callback )
 		return m_LPU237_wait_key_with_callback(h_dev,p_fun,p_parameter);
@@ -291,7 +291,7 @@ unsigned long dll_lpu237::LPU237_wait_key_with_callback( LPU237_HANDLE h_dev, LP
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_wait_swipe_or_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
+type_dword dll_lpu237::LPU237_wait_swipe_or_key_with_callback( LPU237_HANDLE h_dev, LPU237_type_callback p_fun, void *p_parameter )
 {
 	if( m_LPU237_wait_swipe_or_key_with_callback )
 		return m_LPU237_wait_swipe_or_key_with_callback(h_dev,p_fun,p_parameter);
@@ -299,7 +299,7 @@ unsigned long dll_lpu237::LPU237_wait_swipe_or_key_with_callback( LPU237_HANDLE 
 		return LPU237_DLL_RESULT_ERROR;
 }
 
-unsigned long dll_lpu237::LPU237_get_data( unsigned long dw_buffer_index, unsigned long dw_iso_track, unsigned char *s_track_data )
+type_dword dll_lpu237::LPU237_get_data( type_dword dw_buffer_index, type_dword dw_iso_track, unsigned char *s_track_data )
 {
 	if( m_LPU237_get_data )
 		return m_LPU237_get_data(dw_buffer_index,dw_iso_track,s_track_data);

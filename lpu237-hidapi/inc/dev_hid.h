@@ -174,7 +174,7 @@ protected:
 			do{
 
 				if( (n_tx-n_offset) > n_out_report ){
-					memcpy( &v_out_report[1], &v_tx[n_offset], (unsigned long)n_out_report );
+					memcpy( &v_out_report[1], &v_tx[n_offset], (type_dword)n_out_report );
 				}
 				else{
 					memcpy( &v_out_report[1], &v_tx[n_offset], (n_tx-n_offset) );

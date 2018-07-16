@@ -30,10 +30,10 @@
 
 using namespace std;
 
-volatile unsigned long gn_result_index = -1;
-static void _display_card_data( unsigned long n_result_index );
-static void _display_key_data( unsigned long n_result_index );
-static void _display_card_or_key_data( unsigned long n_result_index );
+volatile type_dword gn_result_index = -1;
+static void _display_card_data( type_dword n_result_index );
+static void _display_key_data( type_dword n_result_index );
+static void _display_card_or_key_data( type_dword n_result_index );
 static void _LPU237_card_callback(void*p_parameter);
 static void _LPU237_key_callback(void*p_parameter);
 static void _LPU237_card_or_key_callback(void*p_parameter);
@@ -92,12 +92,12 @@ void _LPU237_card_or_key_callback(void*p_parameter)
 	}while(0);
 }
 
-void _display_card_data( unsigned long n_result_index )
+void _display_card_data( type_dword n_result_index )
 {
-	unsigned long n_result = 0;
+	type_dword n_result = 0;
 	vector<unsigned char> v_track(0);
 
-	for( unsigned long n_track = 0; n_track<3; n_track++ ){
+	for( type_dword n_track = 0; n_track<3; n_track++ ){
 		v_track.resize(0);
 		n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, NULL );
 		switch(n_result){
@@ -130,9 +130,9 @@ void _display_card_data( unsigned long n_result_index )
 }
 
 
-void _display_key_data( unsigned long n_result_index )
+void _display_key_data( type_dword n_result_index )
 {
-	unsigned long n_result = 0;
+	type_dword n_result = 0;
 	vector<unsigned char> v_key(0);
 
 	v_key.resize(0);
@@ -163,9 +163,9 @@ void _display_key_data( unsigned long n_result_index )
 	//
 }
 
-void _display_card_or_key_data( unsigned long n_result_index )
+void _display_card_or_key_data( type_dword n_result_index )
 {
-	unsigned long n_result = 0;
+	type_dword n_result = 0;
 	vector<unsigned char> v_data(0);
 
 	do{
@@ -192,7 +192,7 @@ void _display_card_or_key_data( unsigned long n_result_index )
 			continue;
 		}//end switch
 		//
-		for( unsigned long n_track = 0; n_track<3; n_track++ ){
+		for( type_dword n_track = 0; n_track<3; n_track++ ){
 			v_data.resize(0);
 			n_result = dll_lpu237::get_instance().LPU237_get_data(n_result_index, n_track+1, NULL );
 			switch(n_result){
@@ -235,7 +235,7 @@ void *_wait_card_worker(void *p_data)
 		if( h_dev == NULL )
 			continue;
 		//
-		unsigned long n_result_index = dll_lpu237::get_instance().LPU237_wait_swipe_with_waits(h_dev);
+		type_dword n_result_index = dll_lpu237::get_instance().LPU237_wait_swipe_with_waits(h_dev);
 		if( n_result_index == LPU237_DLL_RESULT_ERROR ){
 			cout << " <> fail LPU237_wait_swipe_with_waits. "<< endl;
 			continue;
@@ -261,7 +261,7 @@ void *_wait_key_worker(void *p_data)
 		if( h_dev == NULL )
 			continue;
 		//
-		unsigned long n_result_index = dll_lpu237::get_instance().LPU237_wait_key_with_waits(h_dev);
+		type_dword n_result_index = dll_lpu237::get_instance().LPU237_wait_key_with_waits(h_dev);
 		if( n_result_index == LPU237_DLL_RESULT_ERROR ){
 			cout << " <> fail LPU237_wait_key_with_waits. "<< endl;
 			continue;
@@ -288,7 +288,7 @@ void *_wait_card_or_key_worker(void *p_data)
 		if( h_dev == NULL )
 			continue;
 		//
-		unsigned long n_result_index = dll_lpu237::get_instance().LPU237_wait_swipe_or_key_with_waits(h_dev);
+		type_dword n_result_index = dll_lpu237::get_instance().LPU237_wait_swipe_or_key_with_waits(h_dev);
 		if( n_result_index == LPU237_DLL_RESULT_ERROR ){
 			cout << " <> fail LPU237_wait_swipe_or_key_with_waits. "<< endl;
 			continue;
@@ -309,7 +309,15 @@ void *_wait_card_or_key_worker(void *p_data)
 
 int main( int argc, char **argv )
 {
-	cout << " = start test = " << endl;
+#if __x86_64__
+/* 64-bit */
+	cout << " = start test(64 bits) = " << sizeof(unsigned int) << endl;
+#else
+/* 32-bit */
+	cout << " = start test(32 bits) = " << sizeof(unsigned long) << endl;
+#endif
+
+
 
 	bool b_close_need = false;
 	bool b_off_need = false;
@@ -430,7 +438,7 @@ void _garbage_processing(bool b_close_need,bool b_off_need,LPU237_HANDLE h_dev )
 			continue;
 		}
 		//
-		unsigned long n_result(LPU237_DLL_RESULT_SUCCESS);
+		type_dword n_result(LPU237_DLL_RESULT_SUCCESS);
 
 		if( b_close_need ){
 			n_result = dll_lpu237::get_instance().LPU237_close( h_dev );
@@ -476,7 +484,7 @@ bool _load_library()
 bool _start_library()
 {
 	bool b_result(false);
-	unsigned long n_result(LPU237_DLL_RESULT_SUCCESS);
+	type_dword n_result(LPU237_DLL_RESULT_SUCCESS);
 
 	do{
 		n_result = dll_lpu237::get_instance().LPU237_dll_on();
@@ -499,7 +507,7 @@ bool _get_device_path_mbcs( string & s_path )
 	do{
 		s_path="";
 		//get buffer size of paths.
-		unsigned long n_buffer_size = dll_lpu237::get_instance().LPU237_get_list_a(NULL);
+		type_dword n_buffer_size = dll_lpu237::get_instance().LPU237_get_list_a(NULL);
 		if( n_buffer_size == 0 ){
 			cout << " <> No device. "<< endl;
 			continue;//no device
@@ -508,7 +516,7 @@ bool _get_device_path_mbcs( string & s_path )
 
 		//get paths
 		vector<char> v_paths(n_buffer_size,0);
-		unsigned long n_dev = dll_lpu237::get_instance().LPU237_get_list_a(&v_paths[0]);
+		type_dword n_dev = dll_lpu237::get_instance().LPU237_get_list_a(&v_paths[0]);
 		if( n_dev == 0 ){
 			cout << " <> No device. "<< endl;
 			continue;//no device
@@ -532,7 +540,7 @@ bool _get_device_path_wchar( wstring & s_path )
 	do{
 		s_path=L"";
 		//get buffer size of paths.
-		unsigned long n_buffer_size = dll_lpu237::get_instance().LPU237_get_list_w(NULL);
+		type_dword n_buffer_size = dll_lpu237::get_instance().LPU237_get_list_w(NULL);
 		if( n_buffer_size == 0 ){
 			wcout << L" <> No device. "<< endl;
 			continue;//no device
@@ -541,7 +549,7 @@ bool _get_device_path_wchar( wstring & s_path )
 
 		//get paths
 		vector<wchar_t> v_paths(n_buffer_size,0);
-		unsigned long n_dev = dll_lpu237::get_instance().LPU237_get_list_w(&v_paths[0]);
+		type_dword n_dev = dll_lpu237::get_instance().LPU237_get_list_w(&v_paths[0]);
 		if( n_dev == 0 ){
 			wcout << L" <> No device. "<< endl;
 			continue;//no device
@@ -599,7 +607,7 @@ bool _get_device_id( LPU237_HANDLE h_dev )
 	bool b_result(false);
 
 	do{
-		unsigned long n_id = dll_lpu237::get_instance().LPU237_get_id( h_dev, NULL );
+		type_dword n_id = dll_lpu237::get_instance().LPU237_get_id( h_dev, NULL );
 		if( n_id == LPU237_DLL_RESULT_ERROR ){
 			cout << " <> fail LPU237_get_id. "<< endl;
 			continue;
@@ -627,7 +635,7 @@ bool _get_device_id( LPU237_HANDLE h_dev )
 bool _enable_device( LPU237_HANDLE h_dev )
 {
 	bool b_result(false);
-	unsigned long n_result(LPU237_DLL_RESULT_SUCCESS);
+	type_dword n_result(LPU237_DLL_RESULT_SUCCESS);
 
 	do{
 		n_result = dll_lpu237::get_instance().LPU237_enable(h_dev);
@@ -646,7 +654,7 @@ bool _enable_device( LPU237_HANDLE h_dev )
 bool _disable_device( LPU237_HANDLE h_dev )
 {
 	bool b_result(false);
-	unsigned long n_result(LPU237_DLL_RESULT_SUCCESS);
+	type_dword n_result(LPU237_DLL_RESULT_SUCCESS);
 
 	do{
 		n_result = dll_lpu237::get_instance().LPU237_disable(h_dev);
@@ -702,7 +710,7 @@ bool _read_card_by_sync( LPU237_HANDLE h_dev )
 bool _read_card_by_async( LPU237_HANDLE h_dev )
 {
 	bool b_result(false);
-	unsigned long n_result(LPU237_DLL_RESULT_SUCCESS);
+	type_dword n_result(LPU237_DLL_RESULT_SUCCESS);
 
 	do{
 		cout << " ******* read your card by async-method ******* " <<endl;
@@ -773,7 +781,7 @@ bool _read_key_by_sync( LPU237_HANDLE h_dev )
 bool _read_key_by_async( LPU237_HANDLE h_dev )
 {
 	bool b_result(false);
-	unsigned long n_result(LPU237_DLL_RESULT_SUCCESS);
+	type_dword n_result(LPU237_DLL_RESULT_SUCCESS);
 
 	do{
 		cout << " ******* read your key by async-method ******* " <<endl;
@@ -844,7 +852,7 @@ bool _read_card_or_key_by_sync( LPU237_HANDLE h_dev )
 bool _read_card_or_key_by_async( LPU237_HANDLE h_dev )
 {
 	bool b_result(false);
-	unsigned long n_result(LPU237_DLL_RESULT_SUCCESS);
+	type_dword n_result(LPU237_DLL_RESULT_SUCCESS);
 
 	do{
 		cout << " ******* read your card or key by async-method ******* " <<endl;
