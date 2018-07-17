@@ -403,13 +403,6 @@ type_dword LPU237_sys_set_global_prepostfix_send_condition(
 		LPU237_HANDLE h_dev
 		, type_dword b_all_track_good
 		);
-type_dword LPU237_sys_mmd_raw(
-		LPU237_HANDLE h_dev
-		, const unsigned char *ps_tx
-		, type_dword dw_tx
-		, unsigned char *ps_rx
-		, type_dword dw_rx
-		);
 
 type_dword LPU237_sys_get_global_prepostfix_send_condition( LPU237_HANDLE h_dev, type_dword *pb_all_track_no_error );
 type_dword LPU237_sys_get_uid( LPU237_HANDLE h_dev, unsigned char  *ps_uid );
@@ -420,9 +413,9 @@ type_dword LPU237_sys_get_version_and_system_type(
 		);
 type_dword LPU237_sys_get_structure_version( LPU237_HANDLE h_dev, unsigned char *s_version );
 type_dword LPU237_sys_get_interface( LPU237_HANDLE h_dev,type_dword *pdw_interface );
-type_dword LPU237_sys_get_language( LPU237_HANDLE h_dev );
-type_dword LPU237_sys_get_buzzer( LPU237_HANDLE h_dev );
-type_dword LPU237_sys_get_msd_run_time( LPU237_HANDLE h_dev );
+type_dword LPU237_sys_get_language( LPU237_HANDLE h_dev,type_dword *pdw_language );
+type_dword LPU237_sys_get_buzzer( LPU237_HANDLE h_dev,type_dword *pdw_buzzer );
+type_dword LPU237_sys_get_msd_run_time( LPU237_HANDLE h_dev,type_dword *pdw_run_time );
 type_dword LPU237_sys_get_track_status(
 		LPU237_HANDLE h_dev
 		, type_dword dw_track
@@ -469,11 +462,6 @@ type_dword LPU237_sys_get_postfix_uart(
 		LPU237_HANDLE h_dev
 		, unsigned char *ps_tag
 		, type_dword dw_tag
-		);
-type_dword LPU237_sys_get_language_map_table(
-		LPU237_HANDLE h_dev
-		, unsigned char *ps_map
-		, type_dword dw_map
 		);
 
 #ifdef __cplusplus

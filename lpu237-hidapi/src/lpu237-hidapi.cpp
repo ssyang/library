@@ -1931,13 +1931,14 @@ type_dword LPU237_sys_enter_config( LPU237_HANDLE h_dev )
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
 
-		if( !p_dev->df_enter_config((hid_device*)h_dev) ){
+		if( !p_dev->df_enter_config(h_hid) ){
 			LOG_ERROR("df_enter_config()");
 			continue;
 		}
@@ -1965,13 +1966,13 @@ type_dword LPU237_sys_leave_config( LPU237_HANDLE h_dev )
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-
-		if( !p_dev->df_leave_config((hid_device*)h_dev) ){
+		if( !p_dev->df_leave_config(h_hid) ){
 			LOG_ERROR("df_leave_config()");
 			continue;
 		}
@@ -1997,13 +1998,13 @@ type_dword LPU237_sys_apply_config( LPU237_HANDLE h_dev )
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-
-		if( !p_dev->df_apply_config((hid_device*)h_dev) ){
+		if( !p_dev->df_apply_config(h_hid) ){
 			LOG_ERROR("df_apply_config()");
 			continue;
 		}
@@ -2030,13 +2031,13 @@ type_dword LPU237_sys_goto_boot( LPU237_HANDLE h_dev )
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-
-		if( !p_dev->df_goto_bootloader((hid_device*)h_dev) ){
+		if( !p_dev->df_goto_bootloader(h_hid) ){
 			LOG_ERROR("df_apply_config()");
 			continue;
 		}
@@ -2069,7 +2070,8 @@ type_dword LPU237_sys_bypass_uart(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
@@ -2079,11 +2081,10 @@ type_dword LPU237_sys_bypass_uart(
 		memcpy( &v_tx[0], ps_tx, dw_tx );
 
 		shared::type_buffer v_rx(0);
-		if( !p_dev->df_bypass_uart((hid_device*)h_dev,v_tx, v_rx ) ){
+		if( !p_dev->df_bypass_uart(h_hid,v_tx, v_rx ) ){
 			LOG_ERROR("df_bypass_uart()");
 			continue;
 		}
-
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
 	}while(0);
 
@@ -2106,16 +2107,16 @@ type_dword LPU237_sys_enter_opos( LPU237_HANDLE h_dev )
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-		if( !p_dev->df_enter_opos((hid_device*)h_dev)){
+		if( !p_dev->df_enter_opos(h_hid)){
 			LOG_ERROR("df_enter_opos()");
 			continue;
 		}
-
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
 	}while(0);
 
@@ -2139,12 +2140,13 @@ type_dword LPU237_sys_leave_opos( LPU237_HANDLE h_dev )
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-		if( !p_dev->df_leave_opos((hid_device*)h_dev)){
+		if( !p_dev->df_leave_opos(h_hid)){
 			LOG_ERROR("df_enter_opos()");
 			continue;
 		}
@@ -2172,12 +2174,13 @@ type_dword LPU237_sys_set_interface( LPU237_HANDLE h_dev, type_dword dw_interfac
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-		if( !p_dev->set_interface((dev_lpu237::type_interface)dw_interface).df_set_interface((hid_device*)h_dev) ){
+		if( !p_dev->set_interface((dev_lpu237::type_interface)dw_interface).df_set_interface(h_hid) ){
 			LOG_ERROR("df_set_interface()");
 			continue;
 		}
@@ -2204,12 +2207,13 @@ type_dword LPU237_sys_set_language( LPU237_HANDLE h_dev, type_dword dw_language 
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-		if( !p_dev->set_language((dev_lpu237::type_language_map_index)dw_language).df_set_language((hid_device*)h_dev) ){
+		if( !p_dev->set_language((dev_lpu237::type_language_map_index)dw_language).df_set_language(h_hid) ){
 			LOG_ERROR("df_set_language()");
 			continue;
 		}
@@ -2236,12 +2240,13 @@ type_dword LPU237_sys_set_buzzer( LPU237_HANDLE h_dev, type_dword dw_frequency )
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-		if( !p_dev->set_buzzer_frequency((int)dw_frequency).df_set_buzzer((hid_device*)h_dev ) ){
+		if( !p_dev->set_buzzer_frequency((int)dw_frequency).df_set_buzzer(h_hid ) ){
 			LOG_ERROR("df_set_buzzer()");
 			continue;
 		}
@@ -2272,7 +2277,8 @@ type_dword LPU237_sys_set_track_status(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
@@ -2281,8 +2287,8 @@ type_dword LPU237_sys_set_track_status(
 		bool enable(false);
 		if( b_enable )
 			enable = true;
-
-		if( !p_dev->set_enable_track( (dev_lpu237::type_msr_track_number)dw_track,enable).df_set_enable_track((hid_device*)h_dev) ){
+		//
+		if( !p_dev->set_enable_track( (dev_lpu237::type_msr_track_number)dw_track,enable).df_set_enable_track(h_hid) ){
 			LOG_ERROR("df_set_enable_track()");
 			continue;
 		}
@@ -2313,7 +2319,8 @@ type_dword LPU237_sys_set_global_prefix(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
@@ -2322,7 +2329,7 @@ type_dword LPU237_sys_set_global_prefix(
 		dev_lpu237::type_tag v_tag(dw_tag);
 		memcpy( &v_tag[0], ps_tag, dw_tag );
 
-		if( !p_dev->set_global_prefix( v_tag ).df_set_global_prefix((hid_device*)h_dev ) ){
+		if( !p_dev->set_global_prefix( v_tag ).df_set_global_prefix(h_hid ) ){
 			LOG_ERROR("df_set_global_prefix()");
 			continue;
 		}
@@ -2353,7 +2360,8 @@ type_dword LPU237_sys_set_global_postfix(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
@@ -2362,7 +2370,7 @@ type_dword LPU237_sys_set_global_postfix(
 		dev_lpu237::type_tag v_tag(dw_tag);
 		memcpy( &v_tag[0], ps_tag, dw_tag );
 
-		if( !p_dev->set_global_postfix( v_tag ).df_set_global_postfix((hid_device*)h_dev ) ){
+		if( !p_dev->set_global_postfix( v_tag ).df_set_global_postfix(h_hid ) ){
 			LOG_ERROR("df_set_global_postfix()");
 			continue;
 		}
@@ -2394,7 +2402,8 @@ type_dword LPU237_sys_set_private_prefix(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
@@ -2402,7 +2411,7 @@ type_dword LPU237_sys_set_private_prefix(
 		dev_lpu237::type_tag v_tag(dw_tag);
 		memcpy( &v_tag[0], ps_tag, dw_tag );
 
-		if( !p_dev->set_private_prefix( (dev_lpu237::type_msr_track_number)dw_track, v_tag ).df_set_private_prefix((hid_device*)h_dev ) ){
+		if( !p_dev->set_private_prefix( (dev_lpu237::type_msr_track_number)dw_track, v_tag ).df_set_private_prefix(h_hid ) ){
 			LOG_ERROR("df_set_private_prefix()");
 			continue;
 		}
@@ -2434,7 +2443,8 @@ type_dword LPU237_sys_set_private_postfix(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
@@ -2442,7 +2452,7 @@ type_dword LPU237_sys_set_private_postfix(
 		dev_lpu237::type_tag v_tag(dw_tag);
 		memcpy( &v_tag[0], ps_tag, dw_tag );
 
-		if( !p_dev->set_private_postfix( (dev_lpu237::type_msr_track_number)dw_track, v_tag ).df_set_private_postfix((hid_device*)h_dev ) ){
+		if( !p_dev->set_private_postfix( (dev_lpu237::type_msr_track_number)dw_track, v_tag ).df_set_private_postfix(h_hid ) ){
 			LOG_ERROR("df_set_private_postfix()");
 			continue;
 		}
@@ -2473,7 +2483,8 @@ type_dword LPU237_sys_set_prefix_ibutton(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
@@ -2481,7 +2492,7 @@ type_dword LPU237_sys_set_prefix_ibutton(
 		dev_lpu237::type_tag v_tag(dw_tag);
 		memcpy( &v_tag[0], ps_tag, dw_tag );
 
-		if( !p_dev->set_ibutton_prefix( v_tag ).df_set_prefix_ibutton((hid_device*)h_dev ) ){
+		if( !p_dev->set_ibutton_prefix( v_tag ).df_set_prefix_ibutton(h_hid ) ){
 			LOG_ERROR("df_set_prefix_ibutton()");
 			continue;
 		}
@@ -2512,7 +2523,8 @@ type_dword LPU237_sys_set_postfix_ibutton(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
@@ -2520,7 +2532,7 @@ type_dword LPU237_sys_set_postfix_ibutton(
 		dev_lpu237::type_tag v_tag(dw_tag);
 		memcpy( &v_tag[0], ps_tag, dw_tag );
 
-		if( !p_dev->set_ibutton_postfix( v_tag ).df_set_postfix_ibutton((hid_device*)h_dev ) ){
+		if( !p_dev->set_ibutton_postfix( v_tag ).df_set_postfix_ibutton(h_hid ) ){
 			LOG_ERROR("df_set_postfix_ibutton()");
 			continue;
 		}
@@ -2551,7 +2563,8 @@ type_dword LPU237_sys_set_prefix_uart(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
@@ -2559,7 +2572,7 @@ type_dword LPU237_sys_set_prefix_uart(
 		dev_lpu237::type_tag v_tag(dw_tag);
 		memcpy( &v_tag[0], ps_tag, dw_tag );
 
-		if( !p_dev->set_uart_prefix( v_tag ).df_set_prefix_uart((hid_device*)h_dev ) ){
+		if( !p_dev->set_uart_prefix( v_tag ).df_set_prefix_uart(h_hid ) ){
 			LOG_ERROR("df_set_prefix_uart()");
 			continue;
 		}
@@ -2590,7 +2603,8 @@ type_dword LPU237_sys_set_postfix_uart(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
@@ -2598,7 +2612,7 @@ type_dword LPU237_sys_set_postfix_uart(
 		dev_lpu237::type_tag v_tag(dw_tag);
 		memcpy( &v_tag[0], ps_tag, dw_tag );
 
-		if( !p_dev->set_uart_postfix( v_tag ).df_set_postfix_uart((hid_device*)h_dev ) ){
+		if( !p_dev->set_uart_postfix( v_tag ).df_set_postfix_uart(h_hid) ){
 			LOG_ERROR("df_set_postfix_uart()");
 			continue;
 		}
@@ -2628,7 +2642,8 @@ type_dword LPU237_sys_set_global_prepostfix_send_condition(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
@@ -2638,46 +2653,11 @@ type_dword LPU237_sys_set_global_prepostfix_send_condition(
 		if(b_all_track_good )
 			is_all_track_good = true;
 
-		if( !p_dev->set_global_prepostfix_send_condition(is_all_track_good).df_set_global_prepostfix_send_condition((hid_device*)h_dev) ){
+		if( !p_dev->set_global_prepostfix_send_condition(is_all_track_good).df_set_global_prepostfix_send_condition(h_hid) ){
 			LOG_ERROR("df_set_global_prepostfix_send_condition()");
 			continue;
 		}
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
-	}while(0);
-
-	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
-	return dw_result;
-}
-
-type_dword LPU237_sys_mmd_raw(
-		LPU237_HANDLE h_dev
-		, const unsigned char *ps_tx
-		, type_dword dw_tx
-		, unsigned char *ps_rx
-		, type_dword dw_rx
-		)
-{
-	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
-
-	LOG_INFO("+ : 0x%x", h_dev );
-
-	do{
-		if( !inner_worker::get_instance().is_setup_ok() ){
-			LOG_ERROR("!is_setup_ok()");
-			continue;
-		}
-		if( h_dev == NULL  ){
-			LOG_ERROR("h_dev == NULL");
-			continue;
-		}
-
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
-		if( p_dev == NULL ){
-			LOG_ERROR("get_device()");
-			continue;
-		}
-
-		//TODO.
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -2700,13 +2680,14 @@ type_dword LPU237_sys_get_global_prepostfix_send_condition( LPU237_HANDLE h_dev,
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
 
-		if( !p_dev->df_get_global_prepostfix_send_condition((hid_device*)h_dev) ){
+		if( !p_dev->df_get_global_prepostfix_send_condition(h_hid) ){
 			LOG_ERROR("df_get_global_prepostfix_send_condition()");
 			continue;
 		}
@@ -2743,12 +2724,13 @@ type_dword LPU237_sys_get_uid( LPU237_HANDLE h_dev, unsigned char  *ps_uid )
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-		if( !p_dev->df_get_uid((hid_device*)h_dev)){
+		if( !p_dev->df_get_uid(h_hid)){
 			LOG_ERROR("df_get_uid()");
 			continue;
 		}
@@ -2788,12 +2770,13 @@ type_dword LPU237_sys_get_version_and_system_type(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-		if( !p_dev->df_get_version_and_system_type((hid_device*)h_dev)){
+		if( !p_dev->df_get_version_and_system_type(h_hid)){
 			LOG_ERROR("df_get_version_and_system_type()");
 			continue;
 		}
@@ -2832,12 +2815,13 @@ type_dword LPU237_sys_get_structure_version( LPU237_HANDLE h_dev, unsigned char 
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-		if( !p_dev->df_get_structure_version((hid_device*)h_dev)){
+		if( !p_dev->df_get_structure_version(h_hid)){
 			LOG_ERROR("df_get_structure_version()");
 			continue;
 		}
@@ -2845,7 +2829,7 @@ type_dword LPU237_sys_get_structure_version( LPU237_HANDLE h_dev, unsigned char 
 		dw_result = LPU237_DLL_RESULT_SUCCESS;
 		if( s_version ){
 			s_version[0] = v.get_major();
-			s_version[1] = v.get_minor()();
+			s_version[1] = v.get_minor();
 			s_version[2] = v.get_fix();
 			s_version[3] = v.get_build();
 		}
@@ -2871,20 +2855,28 @@ type_dword LPU237_sys_get_interface( LPU237_HANDLE h_dev,type_dword *pdw_interfa
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-
-		//TODO.
+		if( !p_dev->df_get_interface(h_hid)){
+			LOG_ERROR("df_get_interface()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		dev_lpu237::type_interface inf = p_dev->get_interface();
+		if( pdw_interface ){
+			*pdw_interface = (type_dword)inf;
+		}
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
 	return dw_result;
 }
 
-type_dword LPU237_sys_get_language( LPU237_HANDLE h_dev )
+type_dword LPU237_sys_get_language( LPU237_HANDLE h_dev,type_dword *pdw_language )
 {
 	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
@@ -2900,20 +2892,28 @@ type_dword LPU237_sys_get_language( LPU237_HANDLE h_dev )
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-
-		//TODO.
+		if( !p_dev->df_get_language(h_hid)){
+			LOG_ERROR("df_get_language()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		dev_lpu237::type_language_map_index language = p_dev->get_language_map_index();
+		if( pdw_language ){
+			*pdw_language = (type_dword)language;
+		}
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
 	return dw_result;
 }
 
-type_dword LPU237_sys_get_buzzer( LPU237_HANDLE h_dev )
+type_dword LPU237_sys_get_buzzer( LPU237_HANDLE h_dev,type_dword *pdw_buzzer )
 {
 	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
@@ -2929,20 +2929,27 @@ type_dword LPU237_sys_get_buzzer( LPU237_HANDLE h_dev )
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-
-		//TODO.
+		if( !p_dev->df_get_buzzer(h_hid)){
+			LOG_ERROR("df_get_buzzer()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		if( pdw_buzzer ){
+			*pdw_buzzer = (type_dword)p_dev->get_buzzer_frequency();
+		}
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
 	return dw_result;
 }
 
-type_dword LPU237_sys_get_msd_run_time( LPU237_HANDLE h_dev )
+type_dword LPU237_sys_get_msd_run_time( LPU237_HANDLE h_dev,type_dword *pdw_run_time )
 {
 	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
 
@@ -2958,13 +2965,20 @@ type_dword LPU237_sys_get_msd_run_time( LPU237_HANDLE h_dev )
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-
-		//TODO.
+		if( !p_dev->df_get_msd_runtime(h_hid)){
+			LOG_ERROR("df_get_msd_runtime()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		if( pdw_run_time ){
+			*pdw_run_time = (type_dword)p_dev->get_msd_bootloader_runtime();
+		}
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -2991,13 +3005,22 @@ type_dword LPU237_sys_get_track_status(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-
-		//TODO.
+		if( !p_dev->df_get_enable_track(h_hid, (dev_lpu237::type_msr_track_number)dw_track)){
+			LOG_ERROR("df_get_enable_track()");
+			continue;
+		}
+		dw_result = LPU237_DLL_RESULT_SUCCESS;
+		if( pb_enable ){
+			*pb_enable = 0;
+			if( p_dev->get_enable_track((dev_lpu237::type_msr_track_number)dw_track) )
+				*pb_enable = 1;
+		}
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -3024,13 +3047,24 @@ type_dword LPU237_sys_get_global_prefix(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
+		if( !p_dev->df_get_global_prefix( h_hid ) ){
+			LOG_ERROR("df_get_global_prefix()");
+			continue;
+		}
 
-		//TODO.
+		dev_lpu237::type_tag v_tag = p_dev->get_global_prefix();
+		dw_result = v_tag.size();
+		if( dw_tag < v_tag.size() || ps_tag == NULL )
+			continue;
+		//
+		memcpy( ps_tag, &v_tag[0],v_tag.size() );
+
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -3057,13 +3091,24 @@ type_dword LPU237_sys_get_global_postfix(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
+		if( !p_dev->df_get_global_postfix( h_hid ) ){
+			LOG_ERROR("df_get_global_postfix()");
+			continue;
+		}
 
-		//TODO.
+		dev_lpu237::type_tag v_tag = p_dev->get_global_postfix();
+		dw_result = v_tag.size();
+		if( dw_tag < v_tag.size() || ps_tag == NULL )
+			continue;
+		//
+		memcpy( ps_tag, &v_tag[0],v_tag.size() );
+
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -3091,13 +3136,22 @@ type_dword LPU237_sys_get_private_prefix(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
-
-		//TODO.
+		if( !p_dev->df_get_private_prefix( h_hid,(dev_lpu237::type_msr_track_number)dw_track ) ){
+			LOG_ERROR("df_get_private_prefix()");
+			continue;
+		}
+		dev_lpu237::type_tag v_tag = p_dev->get_private_prefix((dev_lpu237::type_msr_track_number)dw_track);
+		dw_result = v_tag.size();
+		if( dw_tag < v_tag.size() || ps_tag == NULL )
+			continue;
+		//
+		memcpy( ps_tag, &v_tag[0],v_tag.size() );
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -3125,13 +3179,23 @@ type_dword LPU237_sys_get_private_postfix(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
+		if( !p_dev->df_get_private_postfix( h_hid,(dev_lpu237::type_msr_track_number)dw_track ) ){
+			LOG_ERROR("df_get_private_postfix()");
+			continue;
+		}
+		dev_lpu237::type_tag v_tag = p_dev->get_private_postfix((dev_lpu237::type_msr_track_number)dw_track);
+		dw_result = v_tag.size();
+		if( dw_tag < v_tag.size() || ps_tag == NULL )
+			continue;
+		//
+		memcpy( ps_tag, &v_tag[0],v_tag.size() );
 
-		//TODO.
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -3158,13 +3222,23 @@ type_dword LPU237_sys_get_prefix_ibutton(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
+		if( !p_dev->df_get_prefix_ibutton( h_hid ) ){
+			LOG_ERROR("df_get_prefix_ibutton()");
+			continue;
+		}
 
-		//TODO.
+		dev_lpu237::type_tag v_tag = p_dev->get_prefix_ibutton();
+		dw_result = v_tag.size();
+		if( dw_tag < v_tag.size() || ps_tag == NULL )
+			continue;
+		//
+		memcpy( ps_tag, &v_tag[0],v_tag.size() );
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -3191,13 +3265,24 @@ type_dword LPU237_sys_get_postfix_ibutton(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
+		if( !p_dev->df_get_postfix_ibutton( h_hid ) ){
+			LOG_ERROR("df_get_postfix_ibutton()");
+			continue;
+		}
 
-		//TODO.
+		dev_lpu237::type_tag v_tag = p_dev->get_postfix_ibutton();
+		dw_result = v_tag.size();
+		if( dw_tag < v_tag.size() || ps_tag == NULL )
+			continue;
+		//
+		memcpy( ps_tag, &v_tag[0],v_tag.size() );
+
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -3224,13 +3309,23 @@ type_dword LPU237_sys_get_prefix_uart(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
+		if( !p_dev->df_get_prefix_uart( h_hid ) ){
+			LOG_ERROR("df_get_prefix_uart()");
+			continue;
+		}
 
-		//TODO.
+		dev_lpu237::type_tag v_tag = p_dev->get_prefix_uart();
+		dw_result = v_tag.size();
+		if( dw_tag < v_tag.size() || ps_tag == NULL )
+			continue;
+		//
+		memcpy( ps_tag, &v_tag[0],v_tag.size() );
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
@@ -3257,49 +3352,27 @@ type_dword LPU237_sys_get_postfix_uart(
 			continue;
 		}
 
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
+		dev_hid::type_handle h_hid = (dev_hid::type_handle)h_dev;
+		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( h_hid );
 		if( p_dev == NULL ){
 			LOG_ERROR("get_device()");
 			continue;
 		}
+		if( !p_dev->df_get_postfix_uart( h_hid ) ){
+			LOG_ERROR("df_get_postfix_uart()");
+			continue;
+		}
 
-		//TODO.
+		dev_lpu237::type_tag v_tag = p_dev->get_postfix_uart();
+		dw_result = v_tag.size();
+		if( dw_tag < v_tag.size() || ps_tag == NULL )
+			continue;
+		//
+		memcpy( ps_tag, &v_tag[0],v_tag.size() );
 	}while(0);
 
 	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
 	return dw_result;
 }
 
-type_dword LPU237_sys_get_language_map_table(
-		LPU237_HANDLE h_dev
-		, unsigned char *ps_map
-		, type_dword dw_map
-		)
-{
-	type_dword dw_result = LPU237_DLL_RESULT_ERROR;
-
-	LOG_INFO("+ : 0x%x", h_dev );
-
-	do{
-		if( !inner_worker::get_instance().is_setup_ok() ){
-			LOG_ERROR("!is_setup_ok()");
-			continue;
-		}
-		if( h_dev == NULL  ){
-			LOG_ERROR("h_dev == NULL");
-			continue;
-		}
-
-		dev_lpu237 *p_dev = manager_dev::get_instance().get_device( (hid_device*)h_dev );
-		if( p_dev == NULL ){
-			LOG_ERROR("get_device()");
-			continue;
-		}
-
-		//TODO.
-	}while(0);
-
-	LOG_INFO("- : %s",_get_return_string(dw_result).c_str() );
-	return dw_result;
-}
 
